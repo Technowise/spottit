@@ -53,18 +53,26 @@ Devvit.addCustomPostType({
     const [showSpots, setShowSpots] = !validTileSpotsMarkingDone? useState(1):useState(0);
     const [showGameStartBlock, setShowGameStartBlock] = useState(1);
     const [gameStartTime, setGameStartTime]=useState(0);
-    const [counter, setCounter] = context.useState(0);
+    const [counter, setCounter] = useState(0);
+    const [showLeaderBoard, setShowLeaderBoard] = useState(0);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
+      
       const previousLeaderBoard = await redis.hgetall(myPostId);
-      if (previousLeaderBoard) {
+      if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
         var leaderBoardRecords: leaderBoard[] = [];
         for (const key in previousLeaderBoard) {
           const redisLBObj = JSON.parse(previousLeaderBoard[key]);
-          const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds };
-          leaderBoardRecords.push(lbObj);
+          if( redisLBObj.username ) {
+            const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds };
+            console.log("Pushing object from fetched from redis:");
+            console.log(lbObj)
+            leaderBoardRecords.push(lbObj);
+          }
         }
+
+        leaderBoardRecords.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
         return leaderBoardRecords;
-      }
+      } 
       return [];
     });
 
@@ -145,6 +153,9 @@ Devvit.addCustomPostType({
         const leaderBoardArray = leaderBoardRec;
         const  leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: counter };
         leaderBoardArray.push(leaderBoardObj);
+
+        leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+
         setLeaderBoardRec(leaderBoardArray);
         await redis.hset(myPostId, { [username]: JSON.stringify(leaderBoardObj) });
         await redis.expire(myPostId, redisExpireTimeSeconds);
@@ -210,6 +221,48 @@ Devvit.addCustomPostType({
       </hstack>
     ));  
 
+    const LeaderBoardBlock = () => showLeaderBoard == 1 && (
+      <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
+        <vstack  width="96%" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
+          <hstack padding="small">
+            <text style="heading" size="large" weight='bold' alignment="middle center" width="275px" color='black'>
+                &nbsp;&nbsp;&nbsp;&nbsp;Leaderboard
+            </text>
+            <button size="small" icon='close' width="34px" onPress={() => hideLeaderboardBlock()}></button>
+          </hstack>
+          <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%">
+            <text style="heading" size="medium" weight="bold" color="black" width="70%">
+              &nbsp;Username
+            </text>
+            <text style="heading" size="medium" color="black" width="30%" alignment="start">
+              Total Time
+            </text>
+          </hstack>
+          <vstack width="100%" padding="small" height="70%">
+            {leaderBoardRec.map((row) => (
+            <LeaderBoardRow  username={row.username} timeInSeconds={row.timeInSeconds} />
+            ))}
+          </vstack>
+          <hstack alignment="bottom center" width="100%" height="10%">
+            <button size="small" icon='close' onPress={() => hideLeaderboardBlock()}>Close</button>
+          </hstack>
+          <spacer size="small" />
+        </vstack>
+      </vstack>
+    );
+
+    const LeaderBoardRow = (row: leaderBoard): JSX.Element => {
+      return (<hstack padding="xsmall">
+        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="70%">
+          {row.username}
+        </text>
+        <text style="body" size="small" color="black" width="30%" alignment="start">
+          &nbsp;{row.timeInSeconds}
+        </text>
+        </hstack>
+      );
+    };
+
     function toggleSpotsEditing() {
       if( showSpots == 1 ) {
         setShowSpots(0);
@@ -219,13 +272,26 @@ Devvit.addCustomPostType({
       }
     }
 
+
     function showHelpBlock() {
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
         setShowPicture(0);
       }
       setShowHelp(1)
     }
-  
+    
+    function showLeaderboardBlock() {
+      console.log("Here comes the leaderboard records:");
+      console.log(leaderBoardRec);
+      setShowPicture(0);
+      setShowLeaderBoard(1);
+    }
+
+    function hideLeaderboardBlock() {
+      setShowPicture(1);
+      setShowLeaderBoard(0);
+    }
+
     function hideHelpBlock() {
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
         setShowPicture(1);
@@ -367,12 +433,14 @@ Devvit.addCustomPostType({
           <PictureBlock />
           <HelpBlock />
           <MarkSpotsInfo />
+          <LeaderBoardBlock />
           
         </hstack>
         <hstack alignment="middle center" width="100%" height="10%">
           <button icon="help" size="small" onPress={() => showHelpBlock()}>Help</button><spacer size="small" />
           <button icon="external" size="small" onPress={() => showFullPicture()}></button><spacer size="small" />
-          {authorName == currentUsername? <button icon="tap" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" }
+          {authorName == currentUsername? <button icon="tap" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
+          <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
           <StatusBlock />
         </hstack>
       </blocks>
