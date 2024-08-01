@@ -55,21 +55,24 @@ Devvit.addCustomPostType({
     const [gameStartTime, setGameStartTime]=useState(0);
     const [counter, setCounter] = useState(0);
     const [showLeaderBoard, setShowLeaderBoard] = useState(0);
+    const [userTimeInSeconds, setUserTimeInSeconds] = useState(0);
+
+    const [userHasPlayedGame, setUserHasPlayedGame] = useState(false);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
-      
       const previousLeaderBoard = await redis.hgetall(myPostId);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
         var leaderBoardRecords: leaderBoard[] = [];
         for (const key in previousLeaderBoard) {
           const redisLBObj = JSON.parse(previousLeaderBoard[key]);
           if( redisLBObj.username ) {
+            if(redisLBObj.username == currentUsername) {
+              setUserHasPlayedGame(true);
+              setUserTimeInSeconds(redisLBObj.timeInSeconds);
+            }
             const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds };
-            console.log("Pushing object from fetched from redis:");
-            console.log(lbObj)
             leaderBoardRecords.push(lbObj);
           }
         }
-
         leaderBoardRecords.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
         return leaderBoardRecords;
       } 
@@ -148,6 +151,7 @@ Devvit.addCustomPostType({
           appearance: 'success',
         });
         setGameStarted(false);
+        setUserHasPlayedGame(true);
 
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
@@ -239,8 +243,8 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <vstack width="100%" padding="small" height="70%">
-            {leaderBoardRec.map((row) => (
-            <LeaderBoardRow  username={row.username} timeInSeconds={row.timeInSeconds} />
+            {leaderBoardRec.map((row, index) => ( 
+            <LeaderBoardRow row={row} index={index + 1} />
             ))}
           </vstack>
           <hstack alignment="bottom center" width="100%" height="10%">
@@ -251,9 +255,12 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const LeaderBoardRow = (row: leaderBoard): JSX.Element => {
+    const LeaderBoardRow = ({row, index}: {row: leaderBoard, index: number}): JSX.Element => {
       return (<hstack padding="xsmall">
-        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="70%">
+        <text style="body" size="small" weight="bold" color="black" width="10%">
+          {index}
+        </text>
+        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="60%">
           {row.username}
         </text>
         <text style="body" size="small" color="black" width="30%" alignment="start">
@@ -272,7 +279,6 @@ Devvit.addCustomPostType({
       }
     }
 
-
     function showHelpBlock() {
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
         setShowPicture(0);
@@ -281,8 +287,6 @@ Devvit.addCustomPostType({
     }
     
     function showLeaderboardBlock() {
-      console.log("Here comes the leaderboard records:");
-      console.log(leaderBoardRec);
       setShowPicture(0);
       setShowLeaderBoard(1);
     }
@@ -307,17 +311,13 @@ Devvit.addCustomPostType({
       setShowGameStartBlock(0)
     }
   
-    const InfoBlock = () => showHelp == 0  && ScreenIsWide && (     
-    <vstack width="344px" height={'100%'} alignment="start middle" backgroundColor='white'>
+    const InfoBlock = () => authorName == currentUsername && validTileSpotsMarkingDone && (     
+    <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <hstack>
-        <hstack height="100%" backgroundColor='white' alignment="start middle">
-          <icon name="left-fill" size="large"></icon> 
-          <icon name="left-fill" size="large"></icon>
-          <spacer size="small"></spacer>
-        </hstack>
-        <hstack width="300px" backgroundColor='white' >
-          <text width="300px" size="xlarge" weight="bold" wrap color="black">
-            Find the spot in this picture!
+        <hstack width="300px" >
+          <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
+            Your Spottit post is ready for others to play. There have been {leaderBoardRec.length} players who have taken part so far.
+            View leaderboard to see how the participants have fared.
           </text>
         </hstack>
       </hstack>
@@ -352,13 +352,20 @@ Devvit.addCustomPostType({
       </vstack>
       );
 
-    const GameStartBlock = () => showGameStartBlock == 1 && validTileSpotsMarkingDone && (
+    const GameStartBlock = () =>  authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click start when you're ready to find the spot!</text>
       <spacer size="small"/>
       <button appearance="success" onPress={()=> startGame()} >Start!</button>
     </vstack>
     );
+  
+    const GameFinishedBlock = () => authorName != currentUsername && userHasPlayedGame && (
+      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in this picture in {userTimeInSeconds} seconds! Click on Leaderboard button to see if you made it to the top 10 participants. </text>
+      </vstack>
+      );
+
     const HelpBlock = () => showHelp == 1 && (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">
@@ -417,6 +424,8 @@ Devvit.addCustomPostType({
       </hstack>
       <PictureTiles/>
       <GameStartBlock />
+      <GameFinishedBlock />
+      <InfoBlock />
     </zstack>
   );
 
