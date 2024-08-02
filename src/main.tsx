@@ -6,6 +6,7 @@ const resolutiony = 40;
 const size = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
+const maxWrongAttempts = 5;
 
 type leaderBoard = {
   username: string;
@@ -49,13 +50,22 @@ Devvit.addCustomPostType({
       return false;
     });
     const [gameStarted, setGameStarted] = useState(false);
-    const [attemptsCount, setAttemptsCount] = useState(0);
+
     const [showSpots, setShowSpots] = !validTileSpotsMarkingDone? useState(1):useState(0);
-    const [showGameStartBlock, setShowGameStartBlock] = useState(1);
     const [gameStartTime, setGameStartTime]=useState(0);
     const [counter, setCounter] = useState(0);
+    const [counterTracker, setCounterTracker] = useState( async() =>{
+      var counterValue = await redis.get(myPostId+currentUsername+'CounterTracker');
+      if (counterValue && counterValue.length > 0 ) {
+        var counterIntValue = parseInt(counterValue);
+        setCounter(counterIntValue);
+        return counterIntValue;
+      }
+      return 0;
+    } );
     const [showLeaderBoard, setShowLeaderBoard] = useState(0);
     const [userTimeInSeconds, setUserTimeInSeconds] = useState(0);
+    
 
     const [userHasPlayedGame, setUserHasPlayedGame] = useState(false);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
@@ -79,11 +89,25 @@ Devvit.addCustomPostType({
       return [];
     });
 
-    const incrementCounter = () => {
+    const [attemptsCount, setAttemptsCount] = useState(async() =>{
+      var countValue = await redis.get(myPostId+currentUsername+'AttemptsCount');
+      if (countValue && countValue.length > 0 ) {
+        var countIntValue = parseInt(countValue);
+        return countIntValue;
+      }
+      return 0;
+    } );
+
+    const incrementCounter = async () => {
       if( gameStarted) {
         var timeNow = new Date().getTime();
         var totalTime = Math.floor ( (timeNow - gameStartTime) / 1000 ) ;
         setCounter(totalTime);
+        if(counter - counterTracker > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+          setCounterTracker(counter);
+          await redis.set(myPostId+currentUsername+'CounterTracker', counter.toString());
+          await redis.expire(myPostId+currentUsername+'CounterTracker', redisExpireTimeSeconds);
+        }
       }
     }
 
@@ -152,6 +176,7 @@ Devvit.addCustomPostType({
         });
         setGameStarted(false);
         setUserHasPlayedGame(true);
+        setUserTimeInSeconds(counter);
 
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
@@ -165,7 +190,18 @@ Devvit.addCustomPostType({
         await redis.expire(myPostId, redisExpireTimeSeconds);
       }
       else {
-        setAttemptsCount( attemptsCount + 1);
+        context.ui.showToast({
+          text: "Sorry, that is not the right spot!",
+          appearance: 'neutral',
+        });
+        if (attemptsCount < maxWrongAttempts ) {
+          redis.set(myPostId+currentUsername+'AttemptsCount', (attemptsCount + 1).toString());
+          setAttemptsCount( attemptsCount + 1);
+          await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
+        }
+        else{
+          setGameStarted(false);
+        }
       }
     }
 
@@ -195,7 +231,7 @@ Devvit.addCustomPostType({
       return result;
     }
     
-    const PictureTiles = () => (!validTileSpotsMarkingDone || gameStarted) && (
+    const PictureTiles = () => ( (authorName == currentUsername) || gameStarted ) && (
       <vstack
         cornerRadius="small"
         border="none"
@@ -235,10 +271,13 @@ Devvit.addCustomPostType({
             <button size="small" icon='close' width="34px" onPress={() => hideLeaderboardBlock()}></button>
           </hstack>
           <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%">
-            <text style="heading" size="medium" weight="bold" color="black" width="70%">
-              &nbsp;Username
+            <text style="heading" size="small" weight="bold" color="black" width="15%">
+             Rank
             </text>
-            <text style="heading" size="medium" color="black" width="30%" alignment="start">
+            <text style="heading" size="small" weight="bold" color="black" width="55%">
+             Username
+            </text>
+            <text style="heading" size="small" color="black" width="30%" alignment="start">
               Total Time
             </text>
           </hstack>
@@ -257,10 +296,10 @@ Devvit.addCustomPostType({
 
     const LeaderBoardRow = ({row, index}: {row: leaderBoard, index: number}): JSX.Element => {
       return (<hstack padding="xsmall">
-        <text style="body" size="small" weight="bold" color="black" width="10%">
+        <text style="body" size="small" weight="bold" color="black" width="15%">
           {index}
         </text>
-        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="60%">
+        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="55%">
           {row.username}
         </text>
         <text style="body" size="small" color="black" width="30%" alignment="start">
@@ -303,21 +342,18 @@ Devvit.addCustomPostType({
       setShowHelp(0);
     }
 
-    function startGame(){
+    function startOrResumeGame(){
       setGameStarted(true);
-      setGameStartTime(new Date().getTime());
-      
+      setGameStartTime(new Date().getTime() -  (counterTracker * 1000 ));
       setShowSpots(0);
-      setShowGameStartBlock(0)
     }
   
-    const InfoBlock = () => authorName == currentUsername && validTileSpotsMarkingDone && (     
+    const InfoBlock = () => showSpots == 0 && authorName == currentUsername && validTileSpotsMarkingDone && (     
     <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <hstack>
         <hstack width="300px" >
           <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
             Your Spottit post is ready for others to play. There have been {leaderBoardRec.length} players who have taken part so far.
-            View leaderboard to see how the participants have fared.
           </text>
         </hstack>
       </hstack>
@@ -337,34 +373,41 @@ Devvit.addCustomPostType({
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
-              Please mark all tiles by clicking on the boxes. If the object corners run into other boxes, include those boxes too.
+              Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
+              Use browser zoom features to zoom in and out while marking.
               Wait a bit after each click for the box to fill with dark colour (there could be a little delay).
-              Zoom is presently not supported, so you can click on the External icon below to the open full image, or you can use browser zoom features if you are using browser.
+              You can click on the External icon below to the open full image view.
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Click below button after marking all the spots. Afer you click this, members can see the post and start spotting!
             </text>
             <spacer size="small"></spacer>
-            <button size="small" onPress={async ()=> { setValidTileSpotsMarkingDone(true); await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true');}}> Done marking all the spots!</button>
+            <button size="small" onPress={async ()=> { setValidTileSpotsMarkingDone(true); await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true'); setShowSpots(0);}}> Done marking all the spots!</button>
           </vstack>
         </hstack>
       </vstack>
       );
 
-    const GameStartBlock = () =>  authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && (
+    const GameStartBlock = () =>  authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && attemptsCount < maxWrongAttempts  && (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click start when you're ready to find the spot!</text>
+      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ counterTracker == 0 ? "Start!": "Resume!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
-      <button appearance="success" onPress={()=> startGame()} >Start!</button>
+      <button appearance="success" onPress={()=> startOrResumeGame()} > { counterTracker == 0 ? "Start!": "Resume!"}  </button>
     </vstack>
     );
   
     const GameFinishedBlock = () => authorName != currentUsername && userHasPlayedGame && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in this picture in {userTimeInSeconds} seconds! Click on Leaderboard button to see if you made it to the top 10 participants. </text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {userTimeInSeconds} seconds! Click on Leaderboard button to see time of others. </text>
       </vstack>
-      );
+    );
+
+    const MaxAttemptsReachedBlock = () => attemptsCount >= maxWrongAttempts && (
+      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used up all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
+      </vstack>
+    );
 
     const HelpBlock = () => showHelp == 1 && (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
@@ -382,9 +425,9 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Click/tap the spot when you find it.
+                Search the picture to find thing/object as per post title and click/tap the spot when you spot it. You can use browser zoom features to look at parts of the picture, or click on external icon below to view full picture.
+                Once you find the thing/object, come back to this view and click on the spot.
           </text>
-
           <spacer size="medium" />
           <hstack alignment='start middle'>
             <icon name="external" size="xsmall" color='black'></icon>
@@ -400,14 +443,24 @@ Devvit.addCustomPostType({
             <text style="body" wrap size="medium" color='black'>
               &nbsp;icon to view full picture(source).
             </text>
-          </hstack>        
+          </hstack>
+          <spacer size="medium" />
+          <hstack alignment='start middle'>
+            <icon name="list-numbered" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; View leaderboard
+            </text>
+          </hstack>
+          <text style="body" wrap size="medium" color='black'>
+                Click on Leaderboard button below to view time taken by other participants.
+          </text>     
         </vstack>
+
         <hstack alignment="bottom center" width="100%" height="8%">
           <button size="small" icon='close' onPress={() => hideHelpBlock()}>Close</button>
         </hstack>
       </vstack>
   );
-
 
   const PictureBlock = () => showPicture == 1 && (
     <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
@@ -426,13 +479,14 @@ Devvit.addCustomPostType({
       <GameStartBlock />
       <GameFinishedBlock />
       <InfoBlock />
+      <MaxAttemptsReachedBlock/>
     </zstack>
   );
 
   const StatusBlock = () => gameStarted && (
-  <hstack alignment="top end" backgroundColor='white'>
-    <text style="body" color='black' size='small' width="250px">
-        Total attempts: {attemptsCount} &nbsp; Total time: {counter}
+  <hstack alignment="top end">
+    <text style="body" size='medium' weight="bold">
+        Attempts: {attemptsCount} &nbsp; Time: {counter}
     </text>
   </hstack> );
 
@@ -447,9 +501,9 @@ Devvit.addCustomPostType({
         </hstack>
         <hstack alignment="middle center" width="100%" height="10%">
           <button icon="help" size="small" onPress={() => showHelpBlock()}>Help</button><spacer size="small" />
-          <button icon="external" size="small" onPress={() => showFullPicture()}></button><spacer size="small" />
+          {gameStarted? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
+          <spacer size="small" />
           {authorName == currentUsername? <button icon="tap" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
-          <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
           <StatusBlock />
         </hstack>
       </blocks>
