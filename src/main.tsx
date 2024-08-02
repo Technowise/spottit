@@ -50,7 +50,6 @@ Devvit.addCustomPostType({
       return false;
     });
     const [gameStarted, setGameStarted] = useState(false);
-
     const [showSpots, setShowSpots] = !validTileSpotsMarkingDone? useState(1):useState(0);
     const [gameStartTime, setGameStartTime]=useState(0);
     const [counter, setCounter] = useState(0);
@@ -65,8 +64,6 @@ Devvit.addCustomPostType({
     } );
     const [showLeaderBoard, setShowLeaderBoard] = useState(0);
     const [userTimeInSeconds, setUserTimeInSeconds] = useState(0);
-    
-
     const [userHasPlayedGame, setUserHasPlayedGame] = useState(false);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
       const previousLeaderBoard = await redis.hgetall(myPostId);
@@ -97,21 +94,6 @@ Devvit.addCustomPostType({
       }
       return 0;
     } );
-
-    const incrementCounter = async () => {
-      if( gameStarted) {
-        var timeNow = new Date().getTime();
-        var totalTime = Math.floor ( (timeNow - gameStartTime) / 1000 ) ;
-        setCounter(totalTime);
-        if(counter - counterTracker > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-          setCounterTracker(counter);
-          await redis.set(myPostId+currentUsername+'CounterTracker', counter.toString());
-          await redis.expire(myPostId+currentUsername+'CounterTracker', redisExpireTimeSeconds);
-        }
-      }
-    }
-
-    context.useInterval(incrementCounter, 1000).start();
 
     const [validTileSpots, setValidTileSpots] = useState(async () => {//Get array of valid picture tile spots from redis.
       var prevValidTiles: pictureTile[] = [];
@@ -145,6 +127,21 @@ Devvit.addCustomPostType({
     const openUserPage = async (username: string) => {
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
     };
+
+    const incrementCounter = async () => {
+      if( gameStarted) {
+        var timeNow = new Date().getTime();
+        var totalTime = Math.floor ( (timeNow - gameStartTime) / 1000 ) ;
+        setCounter(totalTime);
+        if(counter - counterTracker > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+          setCounterTracker(counter);
+          await redis.set(myPostId+currentUsername+'CounterTracker', counter.toString());
+          await redis.expire(myPostId+currentUsername+'CounterTracker', redisExpireTimeSeconds);
+        }
+      }
+    }
+
+    context.useInterval(incrementCounter, 1000).start();
 
     function showFullPicture() {
       context.ui.navigateTo(imageURL);
@@ -180,11 +177,9 @@ Devvit.addCustomPostType({
 
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
-        const  leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: counter };
+        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: counter };
         leaderBoardArray.push(leaderBoardObj);
-
         leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-
         setLeaderBoardRec(leaderBoardArray);
         await redis.hset(myPostId, { [username]: JSON.stringify(leaderBoardObj) });
         await redis.expire(myPostId, redisExpireTimeSeconds);
@@ -322,12 +317,14 @@ Devvit.addCustomPostType({
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
         setShowPicture(0);
       }
-      setShowHelp(1)
+      setShowHelp(1);
+      setShowLeaderBoard(0);
     }
     
     function showLeaderboardBlock() {
       setShowPicture(0);
       setShowLeaderBoard(1);
+      setShowHelp(0);
     }
 
     function hideLeaderboardBlock() {
@@ -336,10 +333,8 @@ Devvit.addCustomPostType({
     }
 
     function hideHelpBlock() {
-      if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
-        setShowPicture(1);
-      }
       setShowHelp(0);
+      setShowPicture(1);
     }
 
     function startOrResumeGame(){
@@ -425,7 +420,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Search the picture to find thing/object as per post title and click/tap the spot when you spot it. You can use browser zoom features to look at parts of the picture, or click on external icon below to view full picture.
+                Search the picture to find thing/object as per post title and click/tap on it when you spot it. You can use browser zoom features to look at parts of the picture, or click on external icon  below to view full picture.
                 Once you find the thing/object, come back to this view and click on the spot.
           </text>
           <spacer size="medium" />
@@ -455,7 +450,6 @@ Devvit.addCustomPostType({
                 Click on Leaderboard button below to view time taken by other participants.
           </text>     
         </vstack>
-
         <hstack alignment="bottom center" width="100%" height="8%">
           <button size="small" icon='close' onPress={() => hideHelpBlock()}>Close</button>
         </hstack>
@@ -485,7 +479,7 @@ Devvit.addCustomPostType({
 
   const StatusBlock = () => gameStarted && (
   <hstack alignment="top end">
-    <text style="body" size='medium' weight="bold">
+    <text style="body" size='medium' weight="bold" width="180px">
         Attempts: {attemptsCount} &nbsp; Time: {counter}
     </text>
   </hstack> );
@@ -497,7 +491,6 @@ Devvit.addCustomPostType({
           <HelpBlock />
           <MarkSpotsInfo />
           <LeaderBoardBlock />
-          
         </hstack>
         <hstack alignment="middle center" width="100%" height="10%">
           <button icon="help" size="small" onPress={() => showHelpBlock()}>Help</button><spacer size="small" />
@@ -570,7 +563,7 @@ const pictureInputForm = Devvit.createForm(
     await redis.expire(myPostId+'ValidTileSpotsMarkingDone', redisExpireTimeSeconds);
   
     ui.showToast({
-      text: `Successfully created a Spottit post!`,
+      text: `Successfully created a Spottit post! Please select tiles to mark the spot that participants should find`,
       appearance: 'success',
     });
     context.ui.navigateTo(post.url);
@@ -578,7 +571,7 @@ const pictureInputForm = Devvit.createForm(
 );
 
 Devvit.addMenuItem({
-  label: 'Create Spottit post',
+  label: 'Create a Spottit post',
   location: 'subreddit',
   onPress: async (_, context) => {
     context. ui.showForm(pictureInputForm);
