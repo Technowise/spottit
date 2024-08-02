@@ -280,6 +280,9 @@ Devvit.addCustomPostType({
             {leaderBoardRec.map((row, index) => ( 
             <LeaderBoardRow row={row} index={index + 1} />
             ))}
+            {leaderBoardRec.length == 0 ?<text style="body" size="small" color="black" width="100%" alignment="middle" wrap>
+              The leaderboard is empty. You could be the first, close this and start the game!
+            </text>:""}
           </vstack>
           <hstack alignment="bottom center" width="100%" height="10%">
             <button size="small" icon='close' onPress={() => hideLeaderboardBlock()}>Close</button>
