@@ -53,7 +53,6 @@ Devvit.addCustomPostType({
     const [gameAborted, setGameAborted] = useState(async() =>{
       var value = await redis.get(myPostId+currentUsername+'GameAborted');
       if (value === 'true' ) {
-        console.log("Game is aborted, returning true for gameAborted")
         return true
       }
       return false;
@@ -337,7 +336,6 @@ Devvit.addCustomPostType({
     }
     
     function showLeaderboardBlock() {
-      console.log("Show spots is: "+showSpots);
       setShowPicture(0);
       setShowLeaderBoard(1);
       setShowHelp(0);
