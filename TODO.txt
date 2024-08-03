@@ -1,4 +1,4 @@
 TODO:
-
+Add option to view marked spot (when user gives up). After showing the marked spots, that user won't be able to proceed with the game.
 
 

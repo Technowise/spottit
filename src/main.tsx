@@ -41,6 +41,7 @@ Devvit.addCustomPostType({
     });
 
     const [showHelp, setShowHelp] = useState(0);
+    const [showConfirmShowSpot, setShowConfirmShowSpot] =useState(0);
     const [showPicture, setShowPicture] = useState(1);
     const [validTileSpotsMarkingDone, setValidTileSpotsMarkingDone] = useState(async () => {
       const ValidTileSpotsMarkingDone = await redis.get(myPostId+'ValidTileSpotsMarkingDone');
@@ -49,8 +50,16 @@ Devvit.addCustomPostType({
       }
       return false;
     });
+    const [gameAborted, setGameAborted] = useState(async() =>{
+      var value = await redis.get(myPostId+currentUsername+'GameAborted');
+      if (value === 'true' ) {
+        console.log("Game is aborted, returning true for gameAborted")
+        return true
+      }
+      return false;
+    } );  
     const [gameStarted, setGameStarted] = useState(false);
-    const [showSpots, setShowSpots] = !validTileSpotsMarkingDone? useState(1):useState(0);
+    const [showSpots, setShowSpots] = !validTileSpotsMarkingDone || gameAborted ? useState(1):useState(0);
     const [gameStartTime, setGameStartTime]=useState(0);
     const [counter, setCounter] = useState(0);
     const [counterTracker, setCounterTracker] = useState( async() =>{
@@ -195,6 +204,9 @@ Devvit.addCustomPostType({
           await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
         }
         else{
+          await redis.set(myPostId+currentUsername+'GameAborted', 'true');
+          await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
+          setGameAborted(true);
           setGameStarted(false);
         }
       }
@@ -226,7 +238,7 @@ Devvit.addCustomPostType({
       return result;
     }
     
-    const PictureTiles = () => ( (authorName == currentUsername) || gameStarted ) && (
+    const PictureTiles = () => ( (authorName == currentUsername) || gameStarted || gameAborted) && (
       <vstack
         cornerRadius="small"
         border="none"
@@ -245,7 +257,7 @@ Devvit.addCustomPostType({
         onPress={() => {
           if( !validTileSpotsMarkingDone ) {
             toggleValidTile(context, index);
-          } else {
+          } else if(!gameAborted){
             checkIfTileIsValid(context, index);
           }
         }}
@@ -325,6 +337,7 @@ Devvit.addCustomPostType({
     }
     
     function showLeaderboardBlock() {
+      console.log("Show spots is: "+showSpots);
       setShowPicture(0);
       setShowLeaderBoard(1);
       setShowHelp(0);
@@ -345,6 +358,19 @@ Devvit.addCustomPostType({
       setGameStartTime(new Date().getTime() -  (counterTracker * 1000 ));
       setShowSpots(0);
     }
+
+    async function showTheSpotAndAbort(){
+      await redis.set(myPostId+currentUsername+'GameAborted', 'true');
+      await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
+      setGameStarted(false);
+      setGameAborted(true);
+      setShowSpots(1);
+      setShowConfirmShowSpot(0);
+      context.ui.showToast({
+        text: "You can find the object/thing behind the dark spots shown!",
+        appearance: 'neutral',
+      });
+    }
   
     const InfoBlock = () => showSpots == 0 && authorName == currentUsername && validTileSpotsMarkingDone && (     
     <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
@@ -356,6 +382,30 @@ Devvit.addCustomPostType({
         </hstack>
       </hstack>
     </vstack>
+    );
+
+    const ConfirmShowSpotBlock = () => showConfirmShowSpot == 1 && (
+      <hstack width="344px" height="100%" alignment="center middle" backgroundColor='transparent'>
+        <vstack  width="320px" height="45%" alignment="center middle" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
+          <hstack padding="small">
+            <text style="heading" size="large" weight='bold' alignment="middle center" width="270px" color='black'>
+                &nbsp;Are you sure to abort & view?
+            </text>
+            <button size="small" icon='close' width="34px" onPress={() => setShowConfirmShowSpot(0)}></button>
+          </hstack>
+          <vstack height="80%" width="100%" padding="medium">
+            <text wrap color='black'>
+            Are you sure you want to view the spot? This will abort this game and you will not be able to resume again.
+            </text>
+            <spacer size="large" />
+            <hstack alignment="bottom center" width="100%">
+              <button size="small" icon='checkmark' onPress={() => showTheSpotAndAbort()}>Yes</button>
+              <spacer size="medium" />
+              <button size="small" icon='close' onPress={() => setShowConfirmShowSpot(0)}>Cancel</button>
+            </hstack>
+          </vstack>
+        </vstack>
+      </hstack>
     );
 
     const MarkSpotsInfo = () => !validTileSpotsMarkingDone && authorName == currentUsername && ScreenIsWide && (     
@@ -373,7 +423,7 @@ Devvit.addCustomPostType({
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
               Use browser zoom features to zoom in and out while marking.
-              Wait a bit after each click for the box to fill with dark colour (there could be a little delay).
+              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.
               You can click on the External icon below to the open full image view.
             </text>
             <spacer size="small"></spacer>
@@ -387,7 +437,7 @@ Devvit.addCustomPostType({
       </vstack>
       );
 
-    const GameStartBlock = () =>  authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && attemptsCount < maxWrongAttempts  && (
+    const GameStartBlock = () => !gameAborted && authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && attemptsCount < maxWrongAttempts  && (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ counterTracker == 0 ? "Start!": "Resume!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
@@ -404,6 +454,7 @@ Devvit.addCustomPostType({
     const MaxAttemptsReachedBlock = () => attemptsCount >= maxWrongAttempts && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used up all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
+        <button  onPress={()=> setAttemptsCount(0)}>Ok</button>
       </vstack>
     );
 
@@ -423,7 +474,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Search the picture to find thing/object as per post title and click/tap on it when you spot it. You can use browser zoom features to look at parts of the picture, or click on external icon  below to view full picture.
+                Find thing/object in picture as per post title and click/tap on it when you spot it. You can use browser zoom features to look closer or click on external icon below to view full picture.
                 Once you find the thing/object, come back to this view and click on the spot.
           </text>
           <spacer size="medium" />
@@ -443,6 +494,24 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <spacer size="medium" />
+
+          <hstack alignment='start middle'>
+            <icon name="show" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; Abort game and show spot.
+            </text>
+          </hstack>
+          <hstack>
+            <text style="body" wrap size="medium" color='black'>
+              Click on&nbsp;
+            </text>
+            <icon name="show" size='small' color='black'></icon>
+            <text style="body" wrap size="medium" color='black'>
+              &nbsp;icon to abort game and show spot.
+            </text>
+          </hstack>
+          <spacer size="medium" />
+          
           <hstack alignment='start middle'>
             <icon name="list-numbered" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -477,6 +546,7 @@ Devvit.addCustomPostType({
       <GameFinishedBlock />
       <InfoBlock />
       <MaxAttemptsReachedBlock/>
+      <ConfirmShowSpotBlock />
     </zstack>
   );
 
@@ -499,7 +569,8 @@ Devvit.addCustomPostType({
           <button icon="help" size="small" onPress={() => showHelpBlock()}>Help</button><spacer size="small" />
           {gameStarted? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
           <spacer size="small" />
-          {authorName == currentUsername? <button icon="tap" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
+          {gameStarted? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
+          {authorName == currentUsername || gameAborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
           <StatusBlock />
         </hstack>
       </blocks>
