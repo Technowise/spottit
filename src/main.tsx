@@ -555,6 +555,7 @@ Devvit.addCustomPostType({
     </text>
   </hstack> );
 
+  if( imageURL!="" ) {
     return (
       <blocks height="tall">
         <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
@@ -573,6 +574,16 @@ Devvit.addCustomPostType({
         </hstack>
       </blocks>
     )
+  } else {
+      return (
+      <blocks height="tall">
+      <hstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none" >
+        <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 20 days(Due to current Reddit Developer Platform limitations).</text>
+      </hstack>
+      </blocks>);   
+  }
+
+
   }
 })
 
