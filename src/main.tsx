@@ -39,7 +39,7 @@ Devvit.addCustomPostType({
       const currentUser = await context.reddit.getCurrentUser();
       return currentUser?.username;
     });
-
+    const [zoomSelect, setZoomSelect] = useState(0);
     const [showHelp, setShowHelp] = useState(0);
     const [showConfirmShowSpot, setShowConfirmShowSpot] =useState(0);
     const [showPicture, setShowPicture] = useState(1);
@@ -181,7 +181,6 @@ Devvit.addCustomPostType({
         });
         setGameStarted(false);
         setUserHasPlayedGame(true);
-        setUserTimeInSeconds(counter);
 
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
@@ -327,6 +326,15 @@ Devvit.addCustomPostType({
       }
     }
 
+    function toggleZoomSelect() {
+      if( zoomSelect == 1 ) {
+        setZoomSelect(0);
+      }
+      else {
+        setZoomSelect(1);
+      }
+    }
+
     function showHelpBlock() {
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
         setShowPicture(0);
@@ -355,6 +363,13 @@ Devvit.addCustomPostType({
       setGameStarted(true);
       setGameStartTime(new Date().getTime() -  (counterTracker * 1000 ));
       setShowSpots(0);
+    }
+
+    function showZoomView(alignment:string){
+      context.ui.showToast({
+        text: "You selected "+alignment,
+        appearance: 'neutral',
+      });
     }
 
     async function showTheSpotAndAbort(){
@@ -545,8 +560,24 @@ Devvit.addCustomPostType({
       <InfoBlock />
       <MaxAttemptsReachedBlock/>
       <ConfirmShowSpotBlock />
+      <ZoomSelectBlocks />
     </zstack>
   );
+
+  const ZoomSelectBlocks = () => zoomSelect == 1 && (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+    <hstack width="344px" height="230.4px">
+      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top start")}>
+      </hstack>
+      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top end")}>
+      </hstack>
+    </hstack>
+    <hstack width="344px" height="230.4px">
+      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom start")}>
+      </hstack>
+      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom end")}>
+      </hstack>
+    </hstack>
+  </vstack>)
 
   const StatusBlock = () => gameStarted && (
   <hstack alignment="top end">
@@ -565,10 +596,13 @@ Devvit.addCustomPostType({
           <LeaderBoardBlock />
         </hstack>
         <hstack alignment="middle center" width="100%" height="10%">
-          <button icon="help" size="small" onPress={() => showHelpBlock()}>Help</button><spacer size="small" />
+          <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
           {gameStarted? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
           <spacer size="small" />
           {gameStarted? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
+          <spacer size="small" />
+          {gameStarted? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
+          <spacer size="small" />
           {authorName == currentUsername || gameAborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
           <StatusBlock />
         </hstack>
