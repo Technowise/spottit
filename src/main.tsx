@@ -17,6 +17,22 @@ type pictureTile = {
   position: number;
 }
 
+enum gameStates {
+  NotStarted,
+  Started,
+  Finished,
+  Aborted, 
+  Paused
+}
+
+type UserGameState = {
+  state: gameStates;
+  startTime: number;
+  counter: number;
+  counterStage: number;
+  attemptsCount: number;
+}
+
 Devvit.addTrigger({
   event: 'PostDelete',
   onEvent: async (event, context) => {//Delete all keys associated with post.
@@ -43,6 +59,14 @@ Devvit.addCustomPostType({
     const [showHelp, setShowHelp] = useState(0);
     const [showConfirmShowSpot, setShowConfirmShowSpot] =useState(0);
     const [showPicture, setShowPicture] = useState(1);
+    const [authorName] = useState(async () => {
+      const authorName = await redis.get(myPostId+'authorName');
+      if (authorName) {
+          return authorName;
+      }
+      return "";
+    });
+
     const [validTileSpotsMarkingDone, setValidTileSpotsMarkingDone] = useState(async () => {
       const ValidTileSpotsMarkingDone = await redis.get(myPostId+'ValidTileSpotsMarkingDone');
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
@@ -50,29 +74,34 @@ Devvit.addCustomPostType({
       }
       return false;
     });
-    const [gameAborted, setGameAborted] = useState(async() =>{
-      var value = await redis.get(myPostId+currentUsername+'GameAborted');
-      if (value === 'true' ) {
-        return true
+
+    const [userGameStatus, setUserGameStatus] = useState<UserGameState>(
+      async() =>{
+        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, counterStage: 0, attemptsCount: 0 };
+        const redisValues = await redis.mget([myPostId+currentUsername+'GameAborted', myPostId+currentUsername+'CounterTracker', myPostId+currentUsername+'AttemptsCount']);
+        if(redisValues && redisValues.length == 3) 
+        {
+          if (redisValues[0] === 'true' ) {
+            UGS.state = gameStates.Aborted;
+          }
+          else
+          if (redisValues[1] && redisValues[1].length > 0 ) {
+            var counterIntValue = parseInt(redisValues[1]);
+            UGS.counter = UGS.counterStage = counterIntValue;
+            UGS.state = gameStates.Paused;
+          }
+
+          if (redisValues[2] && redisValues[2].length > 0 ) {
+            var attemptsCountIntValue = parseInt(redisValues[2]);
+            UGS.attemptsCount = attemptsCountIntValue;
+          }
+        }
+        return UGS;
       }
-      return false;
-    } );  
-    const [gameStarted, setGameStarted] = useState(false);
-    const [showSpots, setShowSpots] = !validTileSpotsMarkingDone || gameAborted ? useState(1):useState(0);
-    const [gameStartTime, setGameStartTime]=useState(0);
-    const [counter, setCounter] = useState(0);
-    const [counterTracker, setCounterTracker] = useState( async() =>{
-      var counterValue = await redis.get(myPostId+currentUsername+'CounterTracker');
-      if (counterValue && counterValue.length > 0 ) {
-        var counterIntValue = parseInt(counterValue);
-        setCounter(counterIntValue);
-        return counterIntValue;
-      }
-      return 0;
-    } );
+    );
+
+    const [showSpots, setShowSpots] = !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? useState(1):useState(0);
     const [showLeaderBoard, setShowLeaderBoard] = useState(0);
-    const [userTimeInSeconds, setUserTimeInSeconds] = useState(0);
-    const [userHasPlayedGame, setUserHasPlayedGame] = useState(false);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
       const previousLeaderBoard = await redis.hgetall(myPostId);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
@@ -81,8 +110,10 @@ Devvit.addCustomPostType({
           const redisLBObj = JSON.parse(previousLeaderBoard[key]);
           if( redisLBObj.username ) {
             if(redisLBObj.username == currentUsername) {
-              setUserHasPlayedGame(true);
-              setUserTimeInSeconds(redisLBObj.timeInSeconds);
+              const usg = userGameStatus;
+              usg.state = gameStates.Finished;
+              usg.counter = redisLBObj.timeInSeconds;
+              setUserGameStatus(usg);
             }
             const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds };
             leaderBoardRecords.push(lbObj);
@@ -93,15 +124,6 @@ Devvit.addCustomPostType({
       } 
       return [];
     });
-
-    const [attemptsCount, setAttemptsCount] = useState(async() =>{
-      var countValue = await redis.get(myPostId+currentUsername+'AttemptsCount');
-      if (countValue && countValue.length > 0 ) {
-        var countIntValue = parseInt(countValue);
-        return countIntValue;
-      }
-      return 0;
-    } );
 
     const [validTileSpots, setValidTileSpots] = useState(async () => {//Get array of valid picture tile spots from redis.
       var prevValidTiles: pictureTile[] = [];
@@ -124,28 +146,23 @@ Devvit.addCustomPostType({
       return "";
     });
 
-    const [authorName] = useState(async () => {
-      const authorName = await redis.get(myPostId+'authorName');
-      if (authorName) {
-          return authorName;
-      }
-      return "";
-    });
 
     const openUserPage = async (username: string) => {
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
     };
 
     const incrementCounter = async () => {
-      if( gameStarted) {
+      if( userGameStatus.state == gameStates.Started && userGameStatus.attemptsCount < maxWrongAttempts) {
         var timeNow = new Date().getTime();
-        var totalTime = Math.floor ( (timeNow - gameStartTime) / 1000 ) ;
-        setCounter(totalTime);
-        if(counter - counterTracker > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-          setCounterTracker(counter);
-          await redis.set(myPostId+currentUsername+'CounterTracker', counter.toString());
+        const ugs = userGameStatus;
+        ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+
+        if( userGameStatus.counter - userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+          userGameStatus.counterStage = userGameStatus.counter
+          await redis.set(myPostId+currentUsername+'CounterTracker', userGameStatus.counter.toString());
           await redis.expire(myPostId+currentUsername+'CounterTracker', redisExpireTimeSeconds);
         }
+        setUserGameStatus(ugs);
       }
     }
 
@@ -174,17 +191,19 @@ Devvit.addCustomPostType({
     }
 
     async function checkIfTileIsValid(context:Devvit.Context, index:number) {
+      const ugs = userGameStatus;
       if( isValidSpot(index)) {
+        
         context.ui.showToast({
-          text: "You have successfully found the spot in "+counter+" seconds, Congratulations!",
+          text: "You have successfully found the spot in "+userGameStatus.counter+" seconds, Congratulations!",
           appearance: 'success',
         });
-        setGameStarted(false);
-        setUserHasPlayedGame(true);
-
+        
+        ugs.state = gameStates.Finished
+        setUserGameStatus(ugs);
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
-        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: counter };
+        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: userGameStatus.counter };
         leaderBoardArray.push(leaderBoardObj);
         leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
         setLeaderBoardRec(leaderBoardArray);
@@ -192,23 +211,21 @@ Devvit.addCustomPostType({
         await redis.expire(myPostId, redisExpireTimeSeconds);
       }
       else {
+        ugs.attemptsCount = ugs.attemptsCount + 1;
+        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString());
+        await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
         context.ui.showToast({
           text: "Sorry, that is not the right spot!",
           appearance: 'neutral',
         });
-        if (attemptsCount < maxWrongAttempts ) {
-          redis.set(myPostId+currentUsername+'AttemptsCount', (attemptsCount + 1).toString());
-          setAttemptsCount( attemptsCount + 1);
-          await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
-        }
-        else{
+        if (ugs.attemptsCount >= maxWrongAttempts ) 
           await redis.set(myPostId+currentUsername+'GameAborted', 'true');
           await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
-          setGameAborted(true);
-          setGameStarted(false);
-        }
+          ugs.state = gameStates.Aborted;
       }
+      setUserGameStatus(ugs);
     }
+    
 
     function isValidSpot(position:number) {
       let spotObj = validTileSpots.find(i => i.position === position );
@@ -236,7 +253,7 @@ Devvit.addCustomPostType({
       return result;
     }
     
-    const PictureTiles = () => ( (authorName == currentUsername) || gameStarted || gameAborted) && (
+    const PictureTiles = () => ( (authorName == currentUsername) || userGameStatus.state == gameStates.Started|| userGameStatus.state == gameStates.Aborted) && (
       <vstack
         cornerRadius="small"
         border="none"
@@ -255,7 +272,8 @@ Devvit.addCustomPostType({
         onPress={() => {
           if( !validTileSpotsMarkingDone ) {
             toggleValidTile(context, index);
-          } else if(!gameAborted){
+          } 
+          else if(userGameStatus.state != gameStates.Aborted ){
             checkIfTileIsValid(context, index);
           }
         }}
@@ -317,7 +335,7 @@ Devvit.addCustomPostType({
       );
     };
 
-    function toggleSpotsEditing() {
+    function toggleSpots() {
       if( showSpots == 1 ) {
         setShowSpots(0);
       }
@@ -360,9 +378,11 @@ Devvit.addCustomPostType({
     }
 
     function startOrResumeGame(){
-      setGameStarted(true);
-      setGameStartTime(new Date().getTime() -  (counterTracker * 1000 ));
-      setShowSpots(0);
+      const ugs = userGameStatus;
+      ugs.state = gameStates.Started
+      ugs.startTime = new Date().getTime() -  (userGameStatus.counterStage * 1000 );
+      setUserGameStatus(ugs);
+      setShowSpots(0);//TODO. Get rid of this additional state change.
     }
 
     function showZoomView(alignment:string){
@@ -375,10 +395,12 @@ Devvit.addCustomPostType({
     async function showTheSpotAndAbort(){
       await redis.set(myPostId+currentUsername+'GameAborted', 'true');
       await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
-      setGameStarted(false);
-      setGameAborted(true);
-      setShowSpots(1);
-      setShowConfirmShowSpot(0);
+
+      const ugs = userGameStatus;
+      ugs.state = gameStates.Aborted;
+      setUserGameStatus(ugs);
+      setShowSpots(1);//TODO. Get rid of this somehow.
+      setShowConfirmShowSpot(0);//TODO. Get rid of this too somehow.
       context.ui.showToast({
         text: "You can find the object/thing behind the dark spots shown!",
         appearance: 'neutral',
@@ -450,24 +472,24 @@ Devvit.addCustomPostType({
       </vstack>
       );
 
-    const GameStartBlock = () => !gameAborted && authorName != currentUsername &&  !userHasPlayedGame && validTileSpotsMarkingDone &&  !gameStarted && attemptsCount < maxWrongAttempts  && (
+    const GameStartBlock = () => (userGameStatus.state == gameStates.NotStarted || userGameStatus.state == gameStates.Paused ) && authorName != currentUsername  && validTileSpotsMarkingDone && (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ counterTracker == 0 ? "Start!": "Resume!"}' when you're ready to find the spot!</text>
+      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
-      <button appearance="success" onPress={()=> startOrResumeGame()} > { counterTracker == 0 ? "Start!": "Resume!"}  </button>
+      <button appearance="success" onPress={()=> startOrResumeGame()} > { userGameStatus.counterStage == 0 ? "Start!": "Resume!"}  </button>
     </vstack>
     );
   
-    const GameFinishedBlock = () => authorName != currentUsername && userHasPlayedGame && (
+    const GameFinishedBlock = () => authorName != currentUsername && userGameStatus.state == gameStates.Finished && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {userTimeInSeconds} seconds! Click on Leaderboard button to see time of others. </text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {userGameStatus.counter} seconds! Click on Leaderboard button to see time of others. </text>
       </vstack>
     );
 
-    const MaxAttemptsReachedBlock = () => attemptsCount >= maxWrongAttempts && (
+    //TODO: figure out why attempts count is not incrementing at last when it reaches max.
+    const MaxAttemptsReachedBlock = () => userGameStatus.attemptsCount >= maxWrongAttempts && showSpots ==0 && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used up all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
-        <button  onPress={()=> setAttemptsCount(0)}>Ok</button>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
       </vstack>
     );
 
@@ -579,10 +601,10 @@ Devvit.addCustomPostType({
     </hstack>
   </vstack>)
 
-  const StatusBlock = () => gameStarted && (
+  const StatusBlock = () => userGameStatus.state == gameStates.Started && (
   <hstack alignment="top end">
     <text style="body" size='medium' weight="bold" width="180px">
-        Attempts: {attemptsCount} &nbsp; Time: {counter}
+        Attempts: {userGameStatus.attemptsCount} &nbsp; Time: {userGameStatus.counter}
     </text>
   </hstack> );
 
@@ -597,13 +619,13 @@ Devvit.addCustomPostType({
         </hstack>
         <hstack alignment="middle center" width="100%" height="10%">
           <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
-          {gameStarted? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
+          {userGameStatus.state == gameStates.Started? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
           <spacer size="small" />
-          {gameStarted? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
+          {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
           <spacer size="small" />
-          {gameStarted? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
+          {userGameStatus.state == gameStates.Started? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
           <spacer size="small" />
-          {authorName == currentUsername || gameAborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpotsEditing()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
+          {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
           <StatusBlock />
         </hstack>
       </blocks>
