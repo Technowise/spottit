@@ -13,10 +13,6 @@ type leaderBoard = {
   timeInSeconds: number;
 };
 
-type pictureTile = {
-  position: number;
-}
-
 enum gameStates {
   NotStarted,
   Started,
@@ -50,7 +46,16 @@ Devvit.addCustomPostType({
     const {redis, postId } = context;
     const myPostId = postId ?? 'defaultPostId';
     const ScreenIsWide = isScreenWide();
-    const [data] = useState(tiles);
+    const [data, setData] = useState(
+      async () => {
+        const tilesDataStr = await redis.get(myPostId+'TilesDataArray');
+        if (tilesDataStr && tilesDataStr.length > 0 ) {
+          return tilesDataStr.split(",").map(Number);
+        }
+        return tiles;//default to empty array.
+      }
+    );
+
     const [currentUsername] = useState(async () => {
       const currentUser = await context.reddit.getCurrentUser();
       return currentUser?.username;
@@ -125,19 +130,6 @@ Devvit.addCustomPostType({
       return [];
     });
 
-    const [validTileSpots, setValidTileSpots] = useState(async () => {//Get array of valid picture tile spots from redis.
-      var prevValidTiles: pictureTile[] = [];
-      const validSpotsFromRedis = await redis.hget(myPostId, 'validSpots');
-      if (validSpotsFromRedis) {
-          const validTileObjectsFromRedis = JSON.parse(validSpotsFromRedis);
-          for(var i = 0; i < validTileObjectsFromRedis.length; i++) {
-            prevValidTiles.push({position: validTileObjectsFromRedis[i].position})
-          }
-        return prevValidTiles;
-      } 
-      return [];
-    });
-
     const [imageURL] = useState(async () => {
       const imageURL = await redis.get(myPostId+'imageURL');
       if (imageURL) {
@@ -145,7 +137,6 @@ Devvit.addCustomPostType({
       }
       return "";
     });
-
 
     const openUserPage = async (username: string) => {
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
@@ -173,26 +164,20 @@ Devvit.addCustomPostType({
     }
 
     async function toggleValidTile(context:Devvit.Context, index=0) {
-      if( isValidSpot(index)) {
-        const newValidTileSpots = validTileSpots.filter(i => i.position != index );
-        setValidTileSpots(newValidTileSpots);
-        await redis.hset(myPostId, { ["validSpots"]: JSON.stringify(newValidTileSpots) });
-        await redis.expire(myPostId, redisExpireTimeSeconds);
+      var d = data;
+      if(d[index] == 1 ) {
+        d[index] = 0;
       }
-      else {
-        const newValidTileSpots = validTileSpots;
-        newValidTileSpots.push({
-          position: index
-        });
-        setValidTileSpots(newValidTileSpots);
-        await redis.hset(myPostId, { ["validSpots"]: JSON.stringify(newValidTileSpots) });
-        await redis.expire(myPostId, redisExpireTimeSeconds);
+      else
+      {
+        d[index] = 1;
       }
+      setData(d);
     }
 
     async function checkIfTileIsValid(context:Devvit.Context, index:number) {
       const ugs = userGameStatus;
-      if( isValidSpot(index)) {
+      if( data[index] ==  1 ) {
         
         context.ui.showToast({
           text: "You have successfully found the spot in "+userGameStatus.counter+" seconds, Congratulations!",
@@ -211,32 +196,23 @@ Devvit.addCustomPostType({
         await redis.expire(myPostId, redisExpireTimeSeconds);
       }
       else {
-        ugs.attemptsCount = ugs.attemptsCount + 1;
-        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString());
-        await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
         context.ui.showToast({
           text: "Sorry, that is not the right spot!",
           appearance: 'neutral',
-        });
-        if (ugs.attemptsCount >= maxWrongAttempts ) 
+        });        
+        ugs.attemptsCount = ugs.attemptsCount + 1;
+        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString());
+        await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
+
+        if (ugs.attemptsCount >= maxWrongAttempts ) {
           await redis.set(myPostId+currentUsername+'GameAborted', 'true');
           await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
           ugs.state = gameStates.Aborted;
+        }
       }
       setUserGameStatus(ugs);
     }
     
-
-    function isValidSpot(position:number) {
-      let spotObj = validTileSpots.find(i => i.position === position );
-      if( spotObj ) {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-
     function isScreenWide() {
       const width = context.dimensions?.width ?? null;
       return width == null ||  width < 688 ? false : true;
@@ -279,7 +255,7 @@ Devvit.addCustomPostType({
         }}
         width = {`${size}px`}
         height = {`${size}px`}
-        backgroundColor={ showSpots == 1 && isValidSpot(index) ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={showSpots == 1 && !validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ showSpots == 1 && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={showSpots == 1 && !validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));  
@@ -392,6 +368,14 @@ Devvit.addCustomPostType({
       });
     }
 
+    async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
+      setValidTileSpotsMarkingDone(true); 
+      await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true');
+      const redisDataStr = data.join(","); 
+      await redis.set(myPostId+'TilesDataArray', redisDataStr);
+      setShowSpots(0);
+    }
+
     async function showTheSpotAndAbort(){
       await redis.set(myPostId+currentUsername+'GameAborted', 'true');
       await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
@@ -466,7 +450,7 @@ Devvit.addCustomPostType({
               Click below button after marking all the spots. Afer you click this, members can see the post and start spotting!
             </text>
             <spacer size="small"></spacer>
-            <button size="small" onPress={async ()=> { setValidTileSpotsMarkingDone(true); await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true'); setShowSpots(0);}}> Done marking all the spots!</button>
+            <button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking all the spots!</button>
           </vstack>
         </hstack>
       </vstack>
@@ -486,7 +470,6 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    //TODO: figure out why attempts count is not incrementing at last when it reaches max.
     const MaxAttemptsReachedBlock = () => userGameStatus.attemptsCount >= maxWrongAttempts && showSpots ==0 && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
@@ -561,85 +544,83 @@ Devvit.addCustomPostType({
           <button size="small" icon='close' onPress={() => hideHelpBlock()}>Close</button>
         </hstack>
       </vstack>
-  );
+    );
 
-  const PictureBlock = () => showPicture == 1 && (
-    <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-      <hstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
-        <image
-          width="100%"
-          height="100%"
-          url= {imageURL}
-          description="cat"
-          imageHeight={752}
-          imageWidth={752}
-          resizeMode="fit"
-        />
-      </hstack>
-      <PictureTiles/>
-      <GameStartBlock />
-      <GameFinishedBlock />
-      <InfoBlock />
-      <MaxAttemptsReachedBlock/>
-      <ConfirmShowSpotBlock />
-      <ZoomSelectBlocks />
-    </zstack>
-  );
-
-  const ZoomSelectBlocks = () => zoomSelect == 1 && (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
-    <hstack width="344px" height="230.4px">
-      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top start")}>
-      </hstack>
-      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top end")}>
-      </hstack>
-    </hstack>
-    <hstack width="344px" height="230.4px">
-      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom start")}>
-      </hstack>
-      <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom end")}>
-      </hstack>
-    </hstack>
-  </vstack>)
-
-  const StatusBlock = () => userGameStatus.state == gameStates.Started && (
-  <hstack alignment="top end">
-    <text style="body" size='medium' weight="bold" width="180px">
-        Attempts: {userGameStatus.attemptsCount} &nbsp; Time: {userGameStatus.counter}
-    </text>
-  </hstack> );
-
-  if( imageURL!="" ) {
-    return (
-      <blocks height="tall">
-        <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
-          <PictureBlock />
-          <HelpBlock />
-          <MarkSpotsInfo />
-          <LeaderBoardBlock />
+    const PictureBlock = () => showPicture == 1 && (
+      <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
+        <hstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+          <image
+            width="100%"
+            height="100%"
+            url= {imageURL}
+            description="cat"
+            imageHeight={752}
+            imageWidth={752}
+            resizeMode="fit"
+          />
         </hstack>
-        <hstack alignment="middle center" width="100%" height="10%">
-          <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
-          {userGameStatus.state == gameStates.Started? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
-          <spacer size="small" />
-          {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
-          <spacer size="small" />
-          {userGameStatus.state == gameStates.Started? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
-          <spacer size="small" />
-          {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
-          <StatusBlock />
+        <PictureTiles/>
+        <GameStartBlock />
+        <GameFinishedBlock />
+        <InfoBlock />
+        <MaxAttemptsReachedBlock/>
+        <ConfirmShowSpotBlock />
+        <ZoomSelectBlocks />
+      </zstack>
+    );
+
+    const ZoomSelectBlocks = () => zoomSelect == 1 && (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+      <hstack width="344px" height="230.4px">
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top start")}>
         </hstack>
-      </blocks>
-    )
-  } else {
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top end")}>
+        </hstack>
+      </hstack>
+      <hstack width="344px" height="230.4px">
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom start")}>
+        </hstack>
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom end")}>
+        </hstack>
+      </hstack>
+    </vstack>)
+
+    const StatusBlock = () => userGameStatus.state == gameStates.Started && (
+    <hstack alignment="top end">
+      <text style="body" size='medium' weight="bold" width="180px">
+          Attempts: {userGameStatus.attemptsCount} &nbsp; Time: {userGameStatus.counter}
+      </text>
+    </hstack> );
+
+    if( imageURL!="" ) {
       return (
-      <blocks height="tall">
-      <hstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none" >
-        <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 20 days(Due to current Reddit Developer Platform limitations).</text>
-      </hstack>
-      </blocks>);   
-  }
-
-
+        <blocks height="tall">
+          <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
+            <PictureBlock />
+            <HelpBlock />
+            <MarkSpotsInfo />
+            <LeaderBoardBlock />
+          </hstack>
+          <hstack alignment="middle center" width="100%" height="10%">
+            <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
+            {userGameStatus.state == gameStates.Started? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
+            <spacer size="small" />
+            {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
+            <spacer size="small" />
+            {userGameStatus.state == gameStates.Started? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
+            <spacer size="small" />
+            {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
+            <StatusBlock />
+          </hstack>
+        </blocks>
+      )
+    } else {
+        return (
+        <blocks height="tall">
+        <hstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none" >
+          <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 20 days(Due to current Reddit Developer Platform limitations).</text>
+        </hstack>
+        </blocks>);   
+    }
   }
 })
 
