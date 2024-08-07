@@ -23,11 +23,13 @@ type displayBlocks = {
   spots: boolean,
   spotTiles: boolean,
   zoomView: boolean,
+  zoomAlignment: Devvit.Blocks.Alignment,
   zoomSelect:boolean,
   confirmShowSpot:boolean,
   leaderBoard: boolean,
   MarkSpotsInfo: boolean,
   Info: boolean,
+  
 };
 
 enum gameStates {
@@ -112,6 +114,9 @@ Devvit.addCustomPostType({
           if (redisValues[2] && redisValues[2].length > 0 ) {
             var attemptsCountIntValue = parseInt(redisValues[2]);
             UGS.attemptsCount = attemptsCountIntValue;
+            if( UGS.attemptsCount >= maxWrongAttempts ) {
+              UGS.state = gameStates.Aborted;
+            }
           }
         }
         return UGS;
@@ -155,6 +160,7 @@ Devvit.addCustomPostType({
         spotTiles: false,
         spots: !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? true: false,
         zoomView: false,
+        zoomAlignment: "top start",
         zoomSelect:false,
         confirmShowSpot:false,
         leaderBoard: false,
@@ -396,11 +402,18 @@ Devvit.addCustomPostType({
       setUIdisplayBlocks(dBlocks);
     }
 
-    function showZoomView(alignment:string){
+    function showZoomView(alignment:Devvit.Blocks.Alignment){
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      dBlocks.zoomView = true;
+      dBlocks.zoomAlignment = alignment;
+      dBlocks.zoomSelect = false;
+      setUIdisplayBlocks(dBlocks);
+      /*
       context.ui.showToast({
         text: "You selected "+alignment,
         appearance: 'neutral',
       });
+      */
     }
 
     async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
@@ -593,12 +606,11 @@ Devvit.addCustomPostType({
 
     const PictureBlock = () => UIdisplayBlocks.picture && (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+        <hstack width="344px" height="100%" alignment= {UIdisplayBlocks.zoomView? UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'>
           <image
-            width="100%"
-            height="100%"
+            width= {UIdisplayBlocks.zoomView ? "200%" : "100%"}
+            height={UIdisplayBlocks.zoomView ? "200%" : "100%"}
             url= {imageURL}
-            description="cat"
             imageHeight={752}
             imageWidth={752}
             resizeMode="fit"
