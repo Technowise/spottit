@@ -8,6 +8,10 @@ const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
 const maxWrongAttempts = 5;
 
+let dateNow = new Date();
+const milliseconds = redisExpireTimeSeconds * 1000;
+const expireTime = new Date(dateNow.getTime() + milliseconds);
+
 type leaderBoard = {
   username: string;
   timeInSeconds: number;
@@ -73,7 +77,6 @@ Devvit.addCustomPostType({
       const currentUser = await context.reddit.getCurrentUser();
       return currentUser?.username;
     });
-    const [zoomSelect, setZoomSelect] = useState(0);
     const [authorName] = useState(async () => {
       const authorName = await redis.get(myPostId+'authorName');
       if (authorName) {
@@ -172,8 +175,7 @@ Devvit.addCustomPostType({
 
         if( userGameStatus.counter - userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
           userGameStatus.counterStage = userGameStatus.counter
-          await redis.set(myPostId+currentUsername+'CounterTracker', userGameStatus.counter.toString());
-          await redis.expire(myPostId+currentUsername+'CounterTracker', redisExpireTimeSeconds);
+          await redis.set(myPostId+currentUsername+'CounterTracker', userGameStatus.counter.toString(), {expiration: expireTime} );
         }
         setUserGameStatus(ugs);
       }
@@ -214,8 +216,7 @@ Devvit.addCustomPostType({
         leaderBoardArray.push(leaderBoardObj);
         leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
         setLeaderBoardRec(leaderBoardArray);
-        await redis.hset(myPostId, { [username]: JSON.stringify(leaderBoardObj) });
-        await redis.expire(myPostId, redisExpireTimeSeconds);
+        await redis.hset(myPostId, { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
       }
       else {
         context.ui.showToast({
@@ -223,12 +224,10 @@ Devvit.addCustomPostType({
           appearance: 'neutral',
         });        
         ugs.attemptsCount = ugs.attemptsCount + 1;
-        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString());
-        await redis.expire(myPostId+currentUsername+'AttemptsCount', redisExpireTimeSeconds);
+        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
 
         if (ugs.attemptsCount >= maxWrongAttempts ) {
-          await redis.set(myPostId+currentUsername+'GameAborted', 'true');
-          await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
+          await redis.set(myPostId+currentUsername+'GameAborted', 'true', {expiration: expireTime});
           ugs.state = gameStates.Aborted;
         }
       }
@@ -407,17 +406,16 @@ Devvit.addCustomPostType({
     async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
       const dBlocks:displayBlocks = UIdisplayBlocks;
       setValidTileSpotsMarkingDone(true); 
-      await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true');
+      await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
       const redisDataStr = data.join(","); 
-      await redis.set(myPostId+'TilesDataArray', redisDataStr);
+      await redis.set(myPostId+'TilesDataArray', redisDataStr, {expiration: expireTime});
       dBlocks.spots = false;
       setUIdisplayBlocks(dBlocks);
     }
 
     async function showTheSpotAndAbort(){
       const dBlocks:displayBlocks = UIdisplayBlocks;
-      await redis.set(myPostId+currentUsername+'GameAborted', 'true');
-      await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
+      await redis.set(myPostId+currentUsername+'GameAborted', 'true', {expiration: expireTime});
       const ugs = userGameStatus;
       ugs.state = gameStates.Aborted;
       setUserGameStatus(ugs);
@@ -726,12 +724,9 @@ const pictureInputForm = Devvit.createForm(
     const myPostId = post.id;
     const currentUsr = await context.reddit.getCurrentUser();
     const currentUsrName = currentUsr?.username ?? "";
-    await redis.set(myPostId+'imageURL', postImage);
-    await redis.expire(myPostId+'imageURL', redisExpireTimeSeconds);
-    await redis.set(myPostId+'authorName', currentUsrName );
-    await redis.expire(myPostId+'authorName', redisExpireTimeSeconds);
-    await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false');
-    await redis.expire(myPostId+'ValidTileSpotsMarkingDone', redisExpireTimeSeconds);
+    await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
+    await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
+    await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
   
     ui.showToast({
       text: `Successfully created a Spottit post! Please select tiles to mark the spot that participants should find`,
