@@ -13,6 +13,19 @@ type leaderBoard = {
   timeInSeconds: number;
 };
 
+type displayBlocks = {
+  help: boolean,
+  picture: boolean,
+  spots: boolean,
+  spotTiles: boolean,
+  zoomView: boolean,
+  zoomSelect:boolean,
+  confirmShowSpot:boolean,
+  leaderBoard: boolean,
+  MarkSpotsInfo: boolean,
+  Info: boolean,
+};
+
 enum gameStates {
   NotStarted,
   Started,
@@ -61,9 +74,6 @@ Devvit.addCustomPostType({
       return currentUser?.username;
     });
     const [zoomSelect, setZoomSelect] = useState(0);
-    const [showHelp, setShowHelp] = useState(0);
-    const [showConfirmShowSpot, setShowConfirmShowSpot] =useState(0);
-    const [showPicture, setShowPicture] = useState(1);
     const [authorName] = useState(async () => {
       const authorName = await redis.get(myPostId+'authorName');
       if (authorName) {
@@ -105,8 +115,6 @@ Devvit.addCustomPostType({
       }
     );
 
-    const [showSpots, setShowSpots] = !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? useState(1):useState(0);
-    const [showLeaderBoard, setShowLeaderBoard] = useState(0);
     const [leaderBoardRec, setLeaderBoardRec] = useState(async () => {//Get Leaderboard records.
       const previousLeaderBoard = await redis.hgetall(myPostId);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
@@ -136,6 +144,20 @@ Devvit.addCustomPostType({
           return imageURL;
       }
       return "";
+    });
+
+    const [UIdisplayBlocks, setUIdisplayBlocks] = useState<displayBlocks>(() =>{
+      const dBlocks:displayBlocks = {help:false, 
+        picture: true,
+        spotTiles: false,
+        spots: !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? true: false,
+        zoomView: false,
+        zoomSelect:false,
+        confirmShowSpot:false,
+        leaderBoard: false,
+        MarkSpotsInfo: false,
+        Info: false};
+      return dBlocks;
     });
 
     const openUserPage = async (username: string) => {
@@ -255,12 +277,12 @@ Devvit.addCustomPostType({
         }}
         width = {`${size}px`}
         height = {`${size}px`}
-        backgroundColor={ showSpots == 1 && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={showSpots == 1 && !validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ UIdisplayBlocks.spots && !validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));  
 
-    const LeaderBoardBlock = () => showLeaderBoard == 1 && (
+    const LeaderBoardBlock = () => UIdisplayBlocks.leaderBoard && (
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
         <vstack  width="96%" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
@@ -312,53 +334,67 @@ Devvit.addCustomPostType({
     };
 
     function toggleSpots() {
-      if( showSpots == 1 ) {
-        setShowSpots(0);
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      if( dBlocks.spots ) {
+        dBlocks.spots = false;
       }
       else {
-        setShowSpots(1);
+        dBlocks.spots = true;
       }
+      setUIdisplayBlocks(dBlocks);
     }
 
     function toggleZoomSelect() {
-      if( zoomSelect == 1 ) {
-        setZoomSelect(0);
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      if( dBlocks.zoomSelect ) {
+        dBlocks.zoomSelect = false;
       }
       else {
-        setZoomSelect(1);
+        dBlocks.zoomSelect = true;
       }
+      setUIdisplayBlocks(dBlocks);
     }
 
     function showHelpBlock() {
+      const dBlocks:displayBlocks = UIdisplayBlocks;
       if( ! ScreenIsWide ) { //Hide picture in small screen to make space.
-        setShowPicture(0);
+        dBlocks.picture = false;
       }
-      setShowHelp(1);
-      setShowLeaderBoard(0);
+      dBlocks.help = true;
+      dBlocks.leaderBoard = false;
+      setUIdisplayBlocks(dBlocks);
     }
     
     function showLeaderboardBlock() {
-      setShowPicture(0);
-      setShowLeaderBoard(1);
-      setShowHelp(0);
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      dBlocks.picture = false;
+      dBlocks.help = false;
+      dBlocks.leaderBoard = true;
+      setUIdisplayBlocks(dBlocks);
     }
 
     function hideLeaderboardBlock() {
-      setShowPicture(1);
-      setShowLeaderBoard(0);
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      dBlocks.picture = true;
+      dBlocks.leaderBoard = false;
+      setUIdisplayBlocks(dBlocks);
     }
 
     function hideHelpBlock() {
-      setShowHelp(0);
-      setShowPicture(1);
+      const dBlocks:displayBlocks = UIdisplayBlocks;
+      dBlocks.picture = true;
+      dBlocks.help = false;
+      setUIdisplayBlocks(dBlocks);
     }
 
     function startOrResumeGame(){
+      const dBlocks:displayBlocks = UIdisplayBlocks;
       const ugs = userGameStatus;
       ugs.state = gameStates.Started
       ugs.startTime = new Date().getTime() -  (userGameStatus.counterStage * 1000 );
       setUserGameStatus(ugs);
-      setShowSpots(0);//TODO. Get rid of this additional state change.
+      dBlocks.spots = false;
+      setUIdisplayBlocks(dBlocks);
     }
 
     function showZoomView(alignment:string){
@@ -369,29 +405,32 @@ Devvit.addCustomPostType({
     }
 
     async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
+      const dBlocks:displayBlocks = UIdisplayBlocks;
       setValidTileSpotsMarkingDone(true); 
       await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true');
       const redisDataStr = data.join(","); 
       await redis.set(myPostId+'TilesDataArray', redisDataStr);
-      setShowSpots(0);
+      dBlocks.spots = false;
+      setUIdisplayBlocks(dBlocks);
     }
 
     async function showTheSpotAndAbort(){
+      const dBlocks:displayBlocks = UIdisplayBlocks;
       await redis.set(myPostId+currentUsername+'GameAborted', 'true');
       await redis.expire(myPostId+currentUsername+'GameAborted', redisExpireTimeSeconds);
-
       const ugs = userGameStatus;
       ugs.state = gameStates.Aborted;
       setUserGameStatus(ugs);
-      setShowSpots(1);//TODO. Get rid of this somehow.
-      setShowConfirmShowSpot(0);//TODO. Get rid of this too somehow.
+      dBlocks.spots = true;
+      dBlocks.confirmShowSpot = false;
       context.ui.showToast({
         text: "You can find the object/thing behind the dark spots shown!",
         appearance: 'neutral',
       });
+      setUIdisplayBlocks(dBlocks);
     }
   
-    const InfoBlock = () => showSpots == 0 && authorName == currentUsername && validTileSpotsMarkingDone && (     
+    const InfoBlock = () => !UIdisplayBlocks.spots && authorName == currentUsername && validTileSpotsMarkingDone && (     
     <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <hstack>
         <hstack width="300px" >
@@ -403,14 +442,18 @@ Devvit.addCustomPostType({
     </vstack>
     );
 
-    const ConfirmShowSpotBlock = () => showConfirmShowSpot == 1 && (
+    const ConfirmShowSpotBlock = () => UIdisplayBlocks.confirmShowSpot && (
       <hstack width="344px" height="100%" alignment="center middle" backgroundColor='transparent'>
         <vstack  width="320px" height="45%" alignment="center middle" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
             <text style="heading" size="large" weight='bold' alignment="middle center" width="270px" color='black'>
                 &nbsp;Are you sure to abort & view?
             </text>
-            <button size="small" icon='close' width="34px" onPress={() => setShowConfirmShowSpot(0)}></button>
+            <button size="small" icon='close' width="34px" onPress={() => {
+                const dBlocks:displayBlocks = UIdisplayBlocks;
+                dBlocks.confirmShowSpot = false;
+                setUIdisplayBlocks(dBlocks);
+              }}></button>
           </hstack>
           <vstack height="80%" width="100%" padding="medium">
             <text wrap color='black'>
@@ -420,7 +463,11 @@ Devvit.addCustomPostType({
             <hstack alignment="bottom center" width="100%">
               <button size="small" icon='checkmark' onPress={() => showTheSpotAndAbort()}>Yes</button>
               <spacer size="medium" />
-              <button size="small" icon='close' onPress={() => setShowConfirmShowSpot(0)}>Cancel</button>
+              <button size="small" icon='close' onPress={() => {
+                                const dBlocks:displayBlocks = UIdisplayBlocks;
+                                dBlocks.confirmShowSpot = false;
+                                setUIdisplayBlocks(dBlocks);
+              }}>Cancel</button>
             </hstack>
           </vstack>
         </vstack>
@@ -470,13 +517,13 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const MaxAttemptsReachedBlock = () => userGameStatus.attemptsCount >= maxWrongAttempts && showSpots ==0 && (
+    const MaxAttemptsReachedBlock = () => userGameStatus.attemptsCount >= maxWrongAttempts && !UIdisplayBlocks.spots && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
       </vstack>
     );
 
-    const HelpBlock = () => showHelp == 1 && (
+    const HelpBlock = () => UIdisplayBlocks.help && (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">
           <text style="heading" size="large" weight='bold' alignment="middle center" width="290px" color='black'>
@@ -546,7 +593,7 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const PictureBlock = () => showPicture == 1 && (
+    const PictureBlock = () => UIdisplayBlocks.picture && (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
         <hstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
           <image
@@ -569,7 +616,7 @@ Devvit.addCustomPostType({
       </zstack>
     );
 
-    const ZoomSelectBlocks = () => zoomSelect == 1 && (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+    const ZoomSelectBlocks = () => UIdisplayBlocks.zoomSelect && (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
       <hstack width="344px" height="230.4px">
         <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("top start")}>
         </hstack>
@@ -604,11 +651,15 @@ Devvit.addCustomPostType({
             <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
             {userGameStatus.state == gameStates.Started? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
             <spacer size="small" />
-            {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => setShowConfirmShowSpot(1)}></button> : ""}
+            {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => {
+              const dBlocks:displayBlocks = UIdisplayBlocks;
+              dBlocks.confirmShowSpot = true;
+              setUIdisplayBlocks(dBlocks);
+            }}></button> : ""}
             <spacer size="small" />
             {userGameStatus.state == gameStates.Started? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
             <spacer size="small" />
-            {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> {showSpots == 0 ? "Show spots": "Hide spots"} </button> : "" } <spacer size="small" />
+            {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button> : "" } <spacer size="small" />
             <StatusBlock />
           </hstack>
         </blocks>
