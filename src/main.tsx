@@ -621,17 +621,15 @@ Devvit.addCustomPostType({
           }
         }}>
           <image
-            width= {UIdisplayBlocks.zoomView ? "200%" : "100%"}
-            height={UIdisplayBlocks.zoomView ? "200%" : "100%"}
+            width= {UIdisplayBlocks.zoomView ? "688px" : "100%"}
+            height={UIdisplayBlocks.zoomView ? "921.6px" : "100%"}
             url= {imageURL}
             imageHeight={752}
             imageWidth={752}
-            //resizeMode="cover"
-            resizeMode="cover"
-            //resizeMode="fit"
-            
+            resizeMode="fit"
           />
         </hstack>
+
         <PictureTiles/>
         <GameStartBlock />
         <GameFinishedBlock />
@@ -675,7 +673,7 @@ Devvit.addCustomPostType({
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
-            {userGameStatus.state == gameStates.Started? <button icon="external" size="small" onPress={() => showFullPicture()}></button> : <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>}
+            {userGameStatus.state != gameStates.Started && validTileSpotsMarkingDone ? <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>:""}
             <spacer size="small" />
             {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => {
               const dBlocks:displayBlocks = UIdisplayBlocks;
@@ -685,7 +683,9 @@ Devvit.addCustomPostType({
             <spacer size="small" />
             {userGameStatus.state == gameStates.Started? <button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()}></button> : ""}
             <spacer size="small" />
-            {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button> : "" } <spacer size="small" />
+            { (authorName == currentUsername || userGameStatus.state == gameStates.Aborted ) && validTileSpotsMarkingDone ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button> : "" } <spacer size="small" />
+            <spacer size="small" />
+            {authorName == currentUsername && !validTileSpotsMarkingDone && !ScreenIsWide? <button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking!</button>:""}
             <StatusBlock />
           </hstack>
         </blocks>
