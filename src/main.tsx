@@ -626,7 +626,9 @@ Devvit.addCustomPostType({
             url= {imageURL}
             imageHeight={752}
             imageWidth={752}
+            //resizeMode="cover"
             resizeMode="cover"
+            //resizeMode="fit"
             
           />
         </hstack>
@@ -648,9 +650,9 @@ Devvit.addCustomPostType({
         </hstack>
       </hstack>
       <hstack width="344px" height="230.4px">
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("middle start")}>
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom start")}>
         </hstack>
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("middle end")}>
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom end")}>
         </hstack>
       </hstack>
     </vstack>)
