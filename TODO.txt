@@ -1,4 +1,4 @@
 TODO:
 Add option to zoom out/reset zoom.
 Add message to user on zoom saying they have to zoom out for selecting the spot (we can work on feature to be able to select in zoom view as well.)
-
+Store attempts count in redis for use in leaderboard.

@@ -157,7 +157,7 @@ Devvit.addCustomPostType({
     const [UIdisplayBlocks, setUIdisplayBlocks] = useState<displayBlocks>(() =>{
       const dBlocks:displayBlocks = {help:false, 
         picture: true,
-        spotTiles: false,
+        spotTiles:  (authorName == currentUsername) || userGameStatus.state == gameStates.Started || userGameStatus.state == gameStates.Aborted,
         spots: !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? true: false,
         zoomView: false,
         zoomAlignment: "top start",
@@ -256,7 +256,7 @@ Devvit.addCustomPostType({
       return result;
     }
     
-    const PictureTiles = () => ( (authorName == currentUsername) || userGameStatus.state == gameStates.Started|| userGameStatus.state == gameStates.Aborted) && (
+    const PictureTiles = () => UIdisplayBlocks.spotTiles && (
       <vstack
         cornerRadius="small"
         border="none"
@@ -351,11 +351,22 @@ Devvit.addCustomPostType({
 
     function toggleZoomSelect() {
       const dBlocks:displayBlocks = UIdisplayBlocks;
-      if( dBlocks.zoomSelect ) {
+      if( dBlocks.zoomView ){ //If already in zoom view, reset zoom and go back to full picture view
+        dBlocks.spotTiles = true;
         dBlocks.zoomSelect = false;
+        dBlocks.zoomView = false;
+      }
+      else if( dBlocks.zoomSelect ) {
+        dBlocks.zoomSelect = false;
+        dBlocks.spotTiles = true;
       }
       else {
         dBlocks.zoomSelect = true;
+        dBlocks.spotTiles = false;
+        context.ui.showToast({
+          text: "Please select a block to zoom into.",
+          appearance: 'neutral',
+        });
       }
       setUIdisplayBlocks(dBlocks);
     }
@@ -399,6 +410,7 @@ Devvit.addCustomPostType({
       ugs.startTime = new Date().getTime() -  (userGameStatus.counterStage * 1000 );
       setUserGameStatus(ugs);
       dBlocks.spots = false;
+      dBlocks.spotTiles = true;
       setUIdisplayBlocks(dBlocks);
     }
 
@@ -408,12 +420,6 @@ Devvit.addCustomPostType({
       dBlocks.zoomAlignment = alignment;
       dBlocks.zoomSelect = false;
       setUIdisplayBlocks(dBlocks);
-      /*
-      context.ui.showToast({
-        text: "You selected "+alignment,
-        appearance: 'neutral',
-      });
-      */
     }
 
     async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
@@ -606,14 +612,22 @@ Devvit.addCustomPostType({
 
     const PictureBlock = () => UIdisplayBlocks.picture && (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment= {UIdisplayBlocks.zoomView? UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'>
+        <hstack width="344px" height="100%" alignment= {UIdisplayBlocks.zoomView? UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'  onPress={() => {
+          if( UIdisplayBlocks.zoomView) {
+            const dBlocks:displayBlocks = UIdisplayBlocks;
+            dBlocks.zoomView = false;
+            dBlocks.zoomSelect = true;
+            setUIdisplayBlocks(dBlocks);
+          }
+        }}>
           <image
             width= {UIdisplayBlocks.zoomView ? "200%" : "100%"}
             height={UIdisplayBlocks.zoomView ? "200%" : "100%"}
             url= {imageURL}
             imageHeight={752}
             imageWidth={752}
-            resizeMode="fit"
+            resizeMode="cover"
+            
           />
         </hstack>
         <PictureTiles/>
@@ -634,9 +648,9 @@ Devvit.addCustomPostType({
         </hstack>
       </hstack>
       <hstack width="344px" height="230.4px">
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom start")}>
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("middle start")}>
         </hstack>
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("bottom end")}>
+        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => showZoomView("middle end")}>
         </hstack>
       </hstack>
     </vstack>)
@@ -667,7 +681,7 @@ Devvit.addCustomPostType({
               setUIdisplayBlocks(dBlocks);
             }}></button> : ""}
             <spacer size="small" />
-            {userGameStatus.state == gameStates.Started? <button icon="search" size="small" onPress={() => toggleZoomSelect()}></button> : ""}
+            {userGameStatus.state == gameStates.Started? <button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()}></button> : ""}
             <spacer size="small" />
             {authorName == currentUsername || userGameStatus.state == gameStates.Aborted ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button> : "" } <spacer size="small" />
             <StatusBlock />
