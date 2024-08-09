@@ -1,4 +1,4 @@
-import {Devvit, IconName} from '@devvit/public-api'
+import {Devvit} from '@devvit/public-api'
 Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
@@ -491,9 +491,9 @@ Devvit.addCustomPostType({
               <button size="small" icon='checkmark' onPress={() => showTheSpotAndAbort()}>Yes</button>
               <spacer size="medium" />
               <button size="small" icon='close' onPress={() => {
-                                const dBlocks:displayBlocks = UIdisplayBlocks;
-                                dBlocks.confirmShowSpot = false;
-                                setUIdisplayBlocks(dBlocks);
+                const dBlocks:displayBlocks = UIdisplayBlocks;
+                dBlocks.confirmShowSpot = false;
+                setUIdisplayBlocks(dBlocks);
               }}>Cancel</button>
             </hstack>
           </vstack>
@@ -512,12 +512,13 @@ Devvit.addCustomPostType({
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
               Use browser zoom features to zoom in and out while marking.
-              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.pic
+              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
-              Click on 'Done marking!' after after marking all the spots.
+            After marking all the tiles, Click on 'Done marking!'.
             </text>
+            <spacer size="small"></spacer>
 
             <button size="small" icon='close' onPress={() => {
                                 const dBlocks:displayBlocks = UIdisplayBlocks;
@@ -722,11 +723,11 @@ const pictureInputForm = Devvit.createForm(
       {  
         type: 'image',
         name: 'postImage',
-        label: 'Select the picture for your post',
+        label: 'Select picture for your post',
         required: true,
-        helpText: "Select the picture for your post",
+        helpText: "Select picture for your post. Portrait/vertical orientation picture is recommended for better view.",
       },
-    ],  
+    ],
   },  
   async (event, context) => {// onSubmit handler
     const ui  = context.ui;
