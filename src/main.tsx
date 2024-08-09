@@ -1,4 +1,4 @@
-import {Devvit} from '@devvit/public-api'
+import {Devvit, IconName} from '@devvit/public-api'
 Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
@@ -6,8 +6,7 @@ const resolutiony = 40;
 const size = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
-const maxWrongAttempts = 5;
-
+const maxWrongAttempts = 20;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
 const expireTime = new Date(dateNow.getTime() + milliseconds);
@@ -29,7 +28,6 @@ type displayBlocks = {
   leaderBoard: boolean,
   MarkSpotsInfo: boolean,
   Info: boolean,
-  
 };
 
 enum gameStates {
@@ -156,7 +154,7 @@ Devvit.addCustomPostType({
 
     const [UIdisplayBlocks, setUIdisplayBlocks] = useState<displayBlocks>(() =>{
       const dBlocks:displayBlocks = {help:false, 
-        picture: true,
+        picture: (authorName == currentUsername) && !validTileSpotsMarkingDone && !ScreenIsWide ? false:  true,
         spotTiles:  (authorName == currentUsername) || userGameStatus.state == gameStates.Started || userGameStatus.state == gameStates.Aborted,
         spots: !validTileSpotsMarkingDone || userGameStatus.state == gameStates.Aborted ? true: false,
         zoomView: false,
@@ -164,7 +162,7 @@ Devvit.addCustomPostType({
         zoomSelect:false,
         confirmShowSpot:false,
         leaderBoard: false,
-        MarkSpotsInfo: false,
+        MarkSpotsInfo: !validTileSpotsMarkingDone && authorName == currentUsername,
         Info: false};
       return dBlocks;
     });
@@ -422,14 +420,23 @@ Devvit.addCustomPostType({
       setUIdisplayBlocks(dBlocks);
     }
 
-    async function finishMarkingSpots() {//TODO: Verify the working with just an array (instead of objects of valid tiles)
-      const dBlocks:displayBlocks = UIdisplayBlocks;
-      setValidTileSpotsMarkingDone(true); 
-      await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
-      const redisDataStr = data.join(","); 
-      await redis.set(myPostId+'TilesDataArray', redisDataStr, {expiration: expireTime});
-      dBlocks.spots = false;
-      setUIdisplayBlocks(dBlocks);
+    async function finishMarkingSpots() {
+      if( data.find((element) => element == 1) ) 
+      {
+        const dBlocks:displayBlocks = UIdisplayBlocks;
+        setValidTileSpotsMarkingDone(true); 
+        await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
+        const redisDataStr = data.join(","); 
+        await redis.set(myPostId+'TilesDataArray', redisDataStr, {expiration: expireTime});
+        dBlocks.spots = false;
+        setUIdisplayBlocks(dBlocks);
+      }
+      else {
+        context.ui.showToast({
+          text: "There are no tiles selected. Please select the tiles to mark spot that participants must find.",
+          appearance: 'neutral',
+        });
+      }
     }
 
     async function showTheSpotAndAbort(){
@@ -491,30 +498,30 @@ Devvit.addCustomPostType({
       </hstack>
     );
 
-    const MarkSpotsInfo = () => !validTileSpotsMarkingDone && authorName == currentUsername && ScreenIsWide && (     
-      <vstack width="344px" height={'100%'} alignment="start middle" backgroundColor='white'>
+    const MarkSpotsInfo = () =>  UIdisplayBlocks.MarkSpotsInfo  && (     
+      <vstack width="344px" height={'100%'} alignment="start middle" backgroundColor='white' padding="medium">
         <hstack>
-          <hstack height="100%" backgroundColor='white' alignment="start middle">
-            <icon name="left-fill" size="large"></icon> 
-            <spacer size="small"></spacer>
-          </hstack>
           <vstack width="300px" backgroundColor='white' alignment="center middle">
             <text width="300px" size="large" weight="bold" wrap color="black">
               Mark all the tiles/spots that includes what the participants must find.
             </text>
-            <spacer size="small"></spacer>
+            <spacer size="large"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
               Use browser zoom features to zoom in and out while marking.
-              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.
-              You can click on the External icon below to the open full image view.
+              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.pic
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
-              Click below button after marking all the spots. Afer you click this, members can see the post and start spotting!
+              Click on 'Done marking!' after after marking all the spots.
             </text>
-            <spacer size="small"></spacer>
-            <button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking all the spots!</button>
+
+            <button size="small" icon='close' onPress={() => {
+                                const dBlocks:displayBlocks = UIdisplayBlocks;
+                                dBlocks.picture = true;
+                                dBlocks.MarkSpotsInfo = false;
+                                setUIdisplayBlocks(dBlocks);
+              }}>Close</button>
           </vstack>
         </hstack>
       </vstack>
@@ -556,27 +563,20 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Find thing/object in picture as per post title and click/tap on it when you spot it. You can use browser zoom features to look closer or click on external icon below to view full picture.
-                Once you find the thing/object, come back to this view and click on the spot.
+                Find thing/object in picture as per post title and click/tap on it when you spot it.
           </text>
           <spacer size="medium" />
-          <hstack alignment='start middle'>
-            <icon name="external" size="xsmall" color='black'></icon>
-            <text style="heading" size="medium" color='black'>
-              &nbsp; View full picture.
-            </text>
-          </hstack>
-          <hstack>
-            <text style="body" wrap size="medium" color='black'>
-              Click on&nbsp;
-            </text>
-            <icon name="external" size='small' color='black'></icon>
-            <text style="body" wrap size="medium" color='black'>
-              &nbsp;icon to view full picture(source).
-            </text>
-          </hstack>
-          <spacer size="medium" />
 
+          <hstack alignment='start middle'>
+            <icon name="search" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; Zoom to have a closer look
+            </text>
+          </hstack>
+          <text style="body" wrap size="medium" color='black'>
+            You can click on zoom icon and then select sections of the image to zoom into. Once you find the thing/object, come back to full view (by clicking on zoom icon again) and click on the spot.
+          </text>
+          <spacer size="medium" />
           <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -673,19 +673,19 @@ Devvit.addCustomPostType({
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
-            {userGameStatus.state != gameStates.Started && validTileSpotsMarkingDone ? <button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button>:""}
-            <spacer size="small" />
-            {userGameStatus.state == gameStates.Started? <button icon="show" size="small" onPress={() => {
+            {userGameStatus.state != gameStates.Started && validTileSpotsMarkingDone ? <><button icon="list-numbered" size="small" onPress={() => showLeaderboardBlock()}>Leaderboard</button><spacer size="small" /></>:""}
+            
+            {userGameStatus.state == gameStates.Started? <><button icon="show" size="small" onPress={() => {
               const dBlocks:displayBlocks = UIdisplayBlocks;
               dBlocks.confirmShowSpot = true;
               setUIdisplayBlocks(dBlocks);
-            }}></button> : ""}
-            <spacer size="small" />
-            {userGameStatus.state == gameStates.Started? <button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()}></button> : ""}
-            <spacer size="small" />
-            { (authorName == currentUsername || userGameStatus.state == gameStates.Aborted ) && validTileSpotsMarkingDone ? <button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button> : "" } <spacer size="small" />
-            <spacer size="small" />
-            {authorName == currentUsername && !validTileSpotsMarkingDone && !ScreenIsWide? <button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking!</button>:""}
+            }}></button><spacer size="small" /></>: ""}
+            
+            {userGameStatus.state == gameStates.Started? <><button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()}></button><spacer size="small" /></> : ""}
+            
+            { (authorName == currentUsername || userGameStatus.state == gameStates.Aborted ) && validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
+            
+            {authorName == currentUsername && !validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock />
           </hstack>
         </blocks>
@@ -757,7 +757,7 @@ const pictureInputForm = Devvit.createForm(
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
   
     ui.showToast({
-      text: `Successfully created a Spottit post! Please select tiles to mark the spot that participants should find`,
+      text: `Successfully created a Spottit post! Please go to your post and mark the spot that participants should find`,
       appearance: 'success',
     });
     context.ui.navigateTo(post.url);
