@@ -14,6 +14,7 @@ const expireTime = new Date(dateNow.getTime() + milliseconds);
 type leaderBoard = {
   username: string;
   timeInSeconds: number;
+  attempts: number;
 };
 
 type displayBlocks = {
@@ -132,9 +133,10 @@ Devvit.addCustomPostType({
               const usg = userGameStatus;
               usg.state = gameStates.Finished;
               usg.counter = redisLBObj.timeInSeconds;
+              usg.attemptsCount = redisLBObj.attempts;
               setUserGameStatus(usg);
             }
-            const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds };
+            const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
             leaderBoardRecords.push(lbObj);
           }
         }
@@ -216,7 +218,7 @@ Devvit.addCustomPostType({
         setUserGameStatus(ugs);
         const username = currentUsername?? 'defaultUsername';
         const leaderBoardArray = leaderBoardRec;
-        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: userGameStatus.counter };
+        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: userGameStatus.counter, attempts: userGameStatus.attemptsCount };
         leaderBoardArray.push(leaderBoardObj);
         leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
         setLeaderBoardRec(leaderBoardArray);
@@ -306,7 +308,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <vstack width="100%" padding="small" height="70%">
-            {leaderBoardRec.map((row, index) => ( 
+            {leaderBoardRec.slice(0,14).map((row, index) => ( //Max 14 records for now.
             <LeaderBoardRow row={row} index={index + 1} />
             ))}
             {leaderBoardRec.length == 0 ?<text style="body" size="small" color="black" width="100%" alignment="middle" wrap>
@@ -338,6 +340,7 @@ Devvit.addCustomPostType({
 
     function toggleSpots() {
       const dBlocks:displayBlocks = UIdisplayBlocks;
+      dBlocks.spotTiles = true;
       if( dBlocks.spots ) {
         dBlocks.spots = false;
       }
@@ -535,7 +538,7 @@ Devvit.addCustomPostType({
     </vstack>
     );
   
-    const GameFinishedBlock = () => authorName != currentUsername && userGameStatus.state == gameStates.Finished && (
+    const GameFinishedBlock = () => authorName != currentUsername && userGameStatus.state == gameStates.Finished && !UIdisplayBlocks.spots && (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {userGameStatus.counter} seconds! Click on Leaderboard button to see time of others. </text>
       </vstack>
@@ -570,11 +573,11 @@ Devvit.addCustomPostType({
           <hstack alignment='start middle'>
             <icon name="search" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; Zoom to have a closer look
+              &nbsp; Zoom to have a closer look.
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            You can click on zoom icon and then select sections of the image to zoom into. Once you find the thing/object, come back to full view (by clicking on zoom icon again) and click on the spot.
+            You can click on zoom icon and then select block of the image to zoom into. Once you find the thing/object, come back to full view (by clicking on zoom icon again) and click on the spot.
           </text>
           <spacer size="medium" />
           <hstack alignment='start middle'>
@@ -597,11 +600,11 @@ Devvit.addCustomPostType({
           <hstack alignment='start middle'>
             <icon name="list-numbered" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; View leaderboard
+              &nbsp; View leaderboard.
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Click on Leaderboard button below to view time taken by other participants.
+                Click on Leaderboard button below to view time taken by participants.
           </text>     
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
@@ -657,8 +660,11 @@ Devvit.addCustomPostType({
 
     const StatusBlock = () => userGameStatus.state == gameStates.Started && (
     <hstack alignment="top end">
-      <text style="body" size='medium' weight="bold" width="180px">
-          Attempts: {userGameStatus.attemptsCount} &nbsp; Time: {userGameStatus.counter}
+      <text style="body" size='medium' weight="regular" width="85px">
+        Time: {userGameStatus.counter}&nbsp;
+      </text>
+      <text style="body" size='medium' weight="regular" width="80px">
+        Attempts: {userGameStatus.attemptsCount} 
       </text>
     </hstack> );
 
@@ -681,9 +687,9 @@ Devvit.addCustomPostType({
               setUIdisplayBlocks(dBlocks);
             }}></button><spacer size="small" /></>: ""}
             
-            {userGameStatus.state == gameStates.Started? <><button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()}></button><spacer size="small" /></> : ""}
-            
-            { (authorName == currentUsername || userGameStatus.state == gameStates.Aborted ) && validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
+            {userGameStatus.state == gameStates.Started? <><button icon={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => toggleZoomSelect()} appearance={ (UIdisplayBlocks.zoomView || UIdisplayBlocks.zoomSelect ) ? "success" :  "secondary" } ></button><spacer size="small" /></> : ""}
+
+            { (authorName == currentUsername || userGameStatus.state == gameStates.Aborted || userGameStatus.state == gameStates.Finished ) && validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => toggleSpots()}> { UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
             
             {authorName == currentUsername && !validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock />
@@ -709,16 +715,16 @@ const pictureInputForm = Devvit.createForm(
       {
         type: 'string',  
         name: 'title',  
-        label: 'Post title',
+        label: 'What should they find in the picture?',
         required: true,
-        helpText: "Enter a title for what to spot in the picuture"
+        helpText: "Describe what they should search and spot in the picture"
       },
       {  
         type: 'image',
         name: 'postImage',
-        label: 'Select a picture for your post',
+        label: 'Select the picture for your post',
         required: true,
-        helpText: "Select a picture for your post",
+        helpText: "Select the picture for your post",
       },
     ],  
   },  
@@ -757,7 +763,7 @@ const pictureInputForm = Devvit.createForm(
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
   
     ui.showToast({
-      text: `Successfully created a Spottit post! Please go to your post and mark the spot that participants should find`,
+      text: `Successfully created a Spottit post! Please mark the spot that participants should find by going to your post.`,
       appearance: 'success',
     });
     context.ui.navigateTo(post.url);
