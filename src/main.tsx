@@ -1,6 +1,6 @@
 import {Devvit} from '@devvit/public-api'
 Devvit.configure({redditAPI: true, redis: true });
-
+import { usePagination } from '@devvit/kit';
 const resolutionx = 22;
 const resolutiony = 40;
 const size = 16;
@@ -10,6 +10,7 @@ const maxWrongAttempts = 20;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
 const expireTime = new Date(dateNow.getTime() + milliseconds);
+const leaderBoardPageSize = 13;
 
 type leaderBoard = {
   username: string;
@@ -145,6 +146,8 @@ Devvit.addCustomPostType({
       } 
       return [];
     });
+
+    const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, leaderBoardRec, leaderBoardPageSize);
 
     const [imageURL] = useState(async () => {
       const imageURL = await redis.get(myPostId+'imageURL');
@@ -325,14 +328,19 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <vstack width="100%" padding="small" height="70%">
-            {leaderBoardRec.slice(0,13).map((row, index) => ( //Max 13 records for now.
-            <LeaderBoardRow row={row} index={index + 1} />
+            {
+            currentItems.map((row, index) => (
+            <LeaderBoardRow row={row} index={index + 1 + (currentPage * leaderBoardPageSize )} />
             ))}
             {leaderBoardRec.length == 0 ?<text style="body" size="small" color="black" width="100%" alignment="middle" wrap>
               The leaderboard is empty. You could be the first, close this and start the game!
             </text>:""}
           </vstack>
-          <hstack alignment="bottom center" width="100%" height="10%">
+          <hstack alignment="middle center" width="100%" height="10%">
+            <button size="small" onPress={toPrevPage} icon="left"/>
+            <spacer size="xsmall" /><text alignment="middle"> Page: {currentPage + 1}</text><spacer size="xsmall" />
+            <button size="small" onPress={toNextPage} icon="right"/>
+            <spacer size="small" />
             <button size="small" icon='close' onPress={() => hideLeaderboardBlock()}>Close</button>
           </hstack>
           <spacer size="small" />
