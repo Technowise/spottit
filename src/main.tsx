@@ -207,7 +207,7 @@ Devvit.addCustomPostType({
 
     async function checkIfTileIsValid(context:Devvit.Context, index:number) {
       const ugs = userGameStatus;
-      if( data[index] ==  1 ) {
+      if( data[index] ==  1 && userGameStatus.counter > 0 ) {
         
         context.ui.showToast({
           text: "You have successfully found the spot in "+userGameStatus.counter+" seconds, Congratulations!",
@@ -240,6 +240,23 @@ Devvit.addCustomPostType({
       setUserGameStatus(ugs);
     }
     
+    async function deleteLeaderboardRec(username: string) {//TODO: Add confirmation dialog
+      const leaderBoardArray = leaderBoardRec;
+      var updatedLeaderBoardArray = leaderBoardRec;
+      console.log("Before deletion");
+      console.log(updatedLeaderBoardArray);
+      for(var i=0; i< leaderBoardArray.length; i++ ) {
+        if( leaderBoardArray[i].username == username) {
+          updatedLeaderBoardArray.splice(i, i+1);
+          console.log("Trying to delete "+username +" i="+i );
+        }
+      }
+      setLeaderBoardRec(updatedLeaderBoardArray);
+      console.log("after deletion");
+      console.log(updatedLeaderBoardArray);
+      await redis.hdel(myPostId, [username]);
+    }
+
     function isScreenWide() {
       const width = context.dimensions?.width ?? null;
       return width == null ||  width < 688 ? false : true;
@@ -300,7 +317,7 @@ Devvit.addCustomPostType({
             <text style="heading" size="small" weight="bold" color="black" width="15%">
              Rank
             </text>
-            <text style="heading" size="small" weight="bold" color="black" width="55%">
+            <text style="heading" size="small" weight="bold" color="black" width="50%">
              Username
             </text>
             <text style="heading" size="small" color="black" width="30%" alignment="start">
@@ -328,12 +345,13 @@ Devvit.addCustomPostType({
         <text style="body" size="small" weight="bold" color="black" width="15%">
           {index}
         </text>
-        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="55%">
+        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="50%">
           {row.username}
         </text>
         <text style="body" size="small" color="black" width="30%" alignment="start">
           &nbsp;{row.timeInSeconds}
         </text>
+        {currentUsername == authorName? <text size="small" color="black" onPress={() => deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
         </hstack>
       );
     };
