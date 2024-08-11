@@ -314,10 +314,10 @@ Devvit.addCustomPostType({
             <button size="small" icon='close' width="34px" onPress={() => hideLeaderboardBlock()}></button>
           </hstack>
           <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%">
-            <text style="heading" size="small" weight="bold" color="black" width="15%">
+            <text style="heading" size="small" color="black" width="15%">
              Rank
             </text>
-            <text style="heading" size="small" weight="bold" color="black" width="50%">
+            <text style="heading" size="small" color="black" width="50%">
              Username
             </text>
             <text style="heading" size="small" color="black" width="30%" alignment="start">
@@ -325,7 +325,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <vstack width="100%" padding="small" height="70%">
-            {leaderBoardRec.slice(0,14).map((row, index) => ( //Max 14 records for now.
+            {leaderBoardRec.slice(0,13).map((row, index) => ( //Max 13 records for now.
             <LeaderBoardRow row={row} index={index + 1} />
             ))}
             {leaderBoardRec.length == 0 ?<text style="body" size="small" color="black" width="100%" alignment="middle" wrap>
