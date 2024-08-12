@@ -338,7 +338,7 @@ Devvit.addCustomPostType({
           </vstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button size="small" onPress={toPrevPage} icon="left"/>
-            <spacer size="xsmall" /><text alignment="middle"> Page: {currentPage + 1}</text><spacer size="xsmall" />
+            <spacer size="xsmall" /><text alignment="middle" color="black"> Page: {currentPage + 1}</text><spacer size="xsmall" />
             <button size="small" onPress={toNextPage} icon="right"/>
             <spacer size="small" />
             <button size="small" icon='close' onPress={() => hideLeaderboardBlock()}>Close</button>
