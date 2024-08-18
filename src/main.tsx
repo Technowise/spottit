@@ -1,6 +1,7 @@
 import {Devvit} from '@devvit/public-api'
 Devvit.configure({redditAPI: true, redis: true });
 import { usePagination } from '@devvit/kit';
+
 const resolutionx = 22;
 const resolutiony = 40;
 const size = 16;
@@ -53,7 +54,11 @@ Devvit.addTrigger({
   onEvent: async (event, context) => {//Delete all keys associated with post.
     const {redis} = context;
     console.log(`Received PostDelete event:\n${JSON.stringify(event)}`);
-    await redis.hdel(event.postId, await redis.hkeys(event.postId));  
+    await redis.del(event.postId);
+    await redis.del(event.postId+'imageURL');
+    await redis.del(event.postId+'authorName');
+    await redis.del(event.postId+'ValidTileSpotsMarkingDone');
+    await redis.del(event.postId+'TilesDataArray');
   },
 });
 
@@ -246,17 +251,12 @@ Devvit.addCustomPostType({
     async function deleteLeaderboardRec(username: string) {//TODO: Add confirmation dialog
       const leaderBoardArray = leaderBoardRec;
       var updatedLeaderBoardArray = leaderBoardRec;
-      console.log("Before deletion");
-      console.log(updatedLeaderBoardArray);
       for(var i=0; i< leaderBoardArray.length; i++ ) {
         if( leaderBoardArray[i].username == username) {
           updatedLeaderBoardArray.splice(i, i+1);
-          console.log("Trying to delete "+username +" i="+i );
         }
       }
       setLeaderBoardRec(updatedLeaderBoardArray);
-      console.log("after deletion");
-      console.log(updatedLeaderBoardArray);
       await redis.hdel(myPostId, [username]);
     }
 
@@ -736,12 +736,12 @@ Devvit.addCustomPostType({
 
 export default Devvit
 
-const pictureInputForm = Devvit.createForm(  
-  {  
+const pictureInputForm = Devvit.createForm(  (data) => {
+  return {
     fields: [
       {
-        type: 'string',  
-        name: 'title',  
+        type: 'string',
+        name: 'title',
         label: 'What should they find in the picture?',
         required: true,
         helpText: "Describe what they should search and spot in the picture"
@@ -753,13 +753,23 @@ const pictureInputForm = Devvit.createForm(
         required: true,
         helpText: "Select picture for your post. Portrait/vertical orientation picture is recommended for better view.",
       },
+      {
+        type: 'select',
+        name: 'flair',
+        label: 'Flair for the post',
+        options: data.flairOptions,
+        helpText: "Select flair for your post. This must be selected if this subreddit requires flair for posts.",
+        required: false,
+      },
     ],
+  };
   },  
   async (event, context) => {// onSubmit handler
     const ui  = context.ui;
     const reddit = context.reddit;
     const subreddit = await reddit.getCurrentSubreddit();
     const postImage = event.values.postImage;
+    const flairId = event.values.flair ? event.values.flair[0] : null;
     const post = await context.reddit.submitPost({
       preview: (// This will show while your post is loading
         <vstack width={'100%'} height={'100%'} alignment="center middle">
@@ -779,6 +789,7 @@ const pictureInputForm = Devvit.createForm(
       ),
       title: `${event.values.title} [Spottit]`,
       subredditName: subreddit.name,
+      flairId: flairId
     });
   
     const {redis} = context;
@@ -794,13 +805,19 @@ const pictureInputForm = Devvit.createForm(
       appearance: 'success',
     });
     context.ui.navigateTo(post.url);
-  }  
-);
+  } );
 
 Devvit.addMenuItem({
   label: 'Create a Spottit post',
   location: 'subreddit',
   onPress: async (_, context) => {
-    context. ui.showForm(pictureInputForm);
+    const subreddit = await context.reddit.getCurrentSubreddit();
+    const flairTemplates = await subreddit.getPostFlairTemplates();
+    // Create an array of options for the dropdown
+    const options = flairTemplates.map(template => {
+      return { label: template.text, value: template.id };
+    });
+    
+    context.ui.showForm(pictureInputForm, {flairOptions: options});//TODO: utilize the flairOptions param.
   },
 });
