@@ -651,8 +651,10 @@ Devvit.addCustomPostType({
           }
         }}>
           <image
-            width= {UIdisplayBlocks.zoomView ? "688px" : "100%"}
-            height={UIdisplayBlocks.zoomView ? "921.6px" : "100%"}
+            //width= {UIdisplayBlocks.zoomView ? "688px" : "100%"}
+            //height={UIdisplayBlocks.zoomView ? "921.6px" : "100%"}
+            width= {UIdisplayBlocks.zoomView ? "688px" : "344px"}
+            height={UIdisplayBlocks.zoomView ? "921.6px" : "460.8px"}
             url= {imageURL}
             imageHeight={752}
             imageWidth={752}
@@ -818,6 +820,6 @@ Devvit.addMenuItem({
       return { label: template.text, value: template.id };
     });
     
-    context.ui.showForm(pictureInputForm, {flairOptions: options});//TODO: utilize the flairOptions param.
+    context.ui.showForm(pictureInputForm, {flairOptions: options});
   },
 });
