@@ -753,7 +753,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
         name: 'postImage',
         label: 'Select picture for your post',
         required: true,
-        helpText: "Select picture for your post. Portrait/vertical orientation picture is recommended for better view.",
+        helpText: "Select JPG or PNG image for your post. Please note that WEBP is presently not supported. Portrait/vertical orientation picture is recommended for better view.",
       },
       {
         type: 'select',
@@ -772,6 +772,16 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     const subreddit = await reddit.getCurrentSubreddit();
     const postImage = event.values.postImage;
     const flairId = event.values.flair ? event.values.flair[0] : null;
+
+    let regex = /^https?:\/\/.*\/.*\.(webp)\??.*$/gmi;
+    if ( postImage.match(regex)){//Fail request if webp is submitted as this does not seem to be working with present devvit platform.
+      ui.showToast({
+        text: `WEBP format is presently not supported. Please either select either a JPG or PNG image. Submission failed.`,
+        appearance: 'neutral',
+      });
+      return;
+    }  
+
     const post = await context.reddit.submitPost({
       preview: (// This will show while your post is loading
         <vstack width={'100%'} height={'100%'} alignment="center middle">
