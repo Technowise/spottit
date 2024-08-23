@@ -296,7 +296,7 @@ Devvit.addCustomPostType({
           if( !validTileSpotsMarkingDone ) {
             toggleValidTile(context, index);
           } 
-          else if(userGameStatus.state != gameStates.Aborted ){
+          else if( userGameStatus.state != gameStates.Aborted && currentUsername!= authorName ){
             checkIfTileIsValid(context, index);
           }
         }}

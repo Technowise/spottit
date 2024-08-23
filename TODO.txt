@@ -1,4 +1,9 @@
 TODO:
+Make sure to not take clicks/taps of author.
+
+Contact johnny bravo, garfield, sponge-bob reddit communities for spottit ( https://www.reddit.com/r/wimmelbilder/comments/k6v5ah/rainbow_by_me/#lightbox)
+
+
 Add option to zoom out/reset zoom. - Done.
 Add message to user on zoom saying they have to zoom out for selecting the spot (we can work on feature to be able to select in zoom view as well.)
 Store attempts count in redis for use in leaderboard. - Done.
