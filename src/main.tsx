@@ -1,6 +1,8 @@
 import {Devvit} from '@devvit/public-api'
 Devvit.configure({redditAPI: true, redis: true });
 import { usePagination } from '@devvit/kit';
+//import jimp from "@jimp/plugin-blur"
+import jimp from "jimp"
 
 const resolutionx = 22;
 const resolutiony = 40;
@@ -781,6 +783,10 @@ const pictureInputForm = Devvit.createForm(  (data) => {
       });
       return;
     }  
+
+    const image = await jimp.read(event.values.postImage);
+    image.blur(5).write('blur.png');
+    console.log('Image blur file writing Completed');
 
     const post = await context.reddit.submitPost({
       preview: (// This will show while your post is loading
