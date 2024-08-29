@@ -1,4 +1,6 @@
-import {Devvit} from '@devvit/public-api'
+//import {Devvit} from '@devvit/public-api'
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient } from '@devvit/public-api';
+
 Devvit.configure({redditAPI: true, redis: true });
 import { usePagination } from '@devvit/kit';
 
@@ -41,12 +43,194 @@ enum gameStates {
   Paused
 }
 
+export enum Pages {
+  Picture,
+  Help,
+  MarkSpotsInfo,
+  LeaderBoard
+}
+
 type UserGameState = {
   state: gameStates;
   startTime: number;
   counter: number;
   counterStage: number;
   attemptsCount: number;
+}
+
+class SpottitGame {
+  private readonly _currentTime: UseStateResult<number>;
+  private readonly _counterInterval: UseIntervalResult;
+  private readonly _ui: UIClient;
+  private currPage: Pages;
+  private redis: RedisClient;
+  private _ScreenIsWide: boolean;
+  private _context: ContextAPIClients;
+
+  private _UIdisplayBlocks: UseStateResult<displayBlocks>;
+  private _myPostId: UseStateResult<string>;
+  private _currentUsername: UseStateResult<string>;
+  private _authorName: UseStateResult<string>;
+  private _userGameStatus: UseStateResult<UserGameState>;
+  private _validTileSpotsMarkingDone: UseStateResult<boolean>;
+  private _leaderBoardRec:UseStateResult<leaderBoard[]>;
+
+  constructor( context: ContextAPIClients) {
+    this._context = context;
+    this._ui = context.ui;
+    this.currPage = Pages.Picture;
+    this._currentTime = context.useState(0);
+    this.redis = context.redis;
+    this._ScreenIsWide = this.isScreenWide();
+
+    this._myPostId = context.useState(async () => {
+      const pid = await this.getPostId();
+      return pid;
+    });
+  
+    this._currentUsername = context.useState(async () => {
+      const currentUser = await context.reddit.getCurrentUser();
+      return currentUser?.username??'defaultUsername';
+    });
+
+    this._authorName = context.useState(async () => {
+      const authorName = await this.redis.get(this._myPostId+'authorName');
+      if (authorName) {
+          return authorName;
+      }
+      return "";
+    });
+
+    this._userGameStatus = context.useState<UserGameState>(
+      async() =>{
+        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, counterStage: 0, attemptsCount: 0 };
+        const redisValues = await this.redis.mget([ this._myPostId[0]+this._currentUsername[0]+'GameAborted', 
+                                                    this._myPostId[0]+this._currentUsername[0]+'CounterTracker', 
+                                                    this._myPostId[0]+this._currentUsername[0]+'AttemptsCount']);
+        if(redisValues && redisValues.length == 3) 
+        {
+          if (redisValues[0] === 'true' ) {
+            UGS.state = gameStates.Aborted;
+          }
+          else
+          if (redisValues[1] && redisValues[1].length > 0 ) {
+            var counterIntValue = parseInt(redisValues[1]);
+            UGS.counter = UGS.counterStage = counterIntValue;
+            UGS.state = gameStates.Paused;
+          }
+
+          if (redisValues[2] && redisValues[2].length > 0 ) {
+            var attemptsCountIntValue = parseInt(redisValues[2]);
+            UGS.attemptsCount = attemptsCountIntValue;
+            if( UGS.attemptsCount >= maxWrongAttempts ) {
+              UGS.state = gameStates.Aborted;
+            }
+          }
+        }
+        return UGS;
+      }
+    );
+
+    this._validTileSpotsMarkingDone = context.useState(async () => {
+      const ValidTileSpotsMarkingDone = await context.redis.get(this._myPostId[0]+'ValidTileSpotsMarkingDone');
+      if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
+        return true;
+      }
+      return false;
+    });
+
+
+    this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
+      const dBlocks:displayBlocks = {help:false, 
+        picture: (this._authorName[0] == this._currentUsername[0]) && !this._validTileSpotsMarkingDone[0] && !this._ScreenIsWide ? false:  true,
+        spotTiles:  (this._authorName[0] == this._currentUsername[0]) || this._userGameStatus[0].state == gameStates.Started || this._userGameStatus[0].state == gameStates.Aborted,
+        spots: !this._validTileSpotsMarkingDone[0] || this._userGameStatus[0].state == gameStates.Aborted ? true: false,
+        zoomView: false,
+        zoomAlignment: "top start",
+        zoomSelect:false,
+        confirmShowSpot:false,
+        leaderBoard: false,
+        MarkSpotsInfo: !this._validTileSpotsMarkingDone[0] && this._authorName[0] == this._currentUsername[0],
+        Info: false};
+      return dBlocks;
+    });
+
+
+    this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
+      const previousLeaderBoard = await context.redis.hgetall(this._myPostId[0]);
+      if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
+        var leaderBoardRecords: leaderBoard[] = [];
+        for (const key in previousLeaderBoard) {
+          const redisLBObj = JSON.parse(previousLeaderBoard[key]);
+          if( redisLBObj.username ) {
+            if(redisLBObj.username == this._currentUsername[0]) {
+              const usg = this._userGameStatus[0];
+              usg.state = gameStates.Finished;
+              usg.counter = redisLBObj.timeInSeconds;
+              usg.attemptsCount = redisLBObj.attempts;
+              this._userGameStatus[0] = usg;
+              this._userGameStatus[1](usg);
+            }
+            const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
+            leaderBoardRecords.push(lbObj);
+          }
+        }
+        leaderBoardRecords.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+        return leaderBoardRecords;
+      } 
+      return [];
+    });
+
+
+    this._counterInterval = context.useInterval(() => {
+      if (this.currentTime < 999) {
+        this.currentTime++;
+      }
+    }, 1000);
+
+
+  
+    
+  }
+
+
+
+  get currentPage() {
+    return this.currPage;
+  }
+
+  get currentTime() {
+    return this._currentTime[0];
+  }
+
+  private set currentTime(value: number) {
+    this._currentTime[0] = value;
+    this._currentTime[1](value);
+  }
+
+  private set UIdisplayBlocks(value: displayBlocks) {
+    this._UIdisplayBlocks[0] = value;
+    this._UIdisplayBlocks[1](value);
+  }
+
+  private get UIdisplayBlocks() {
+    return this._UIdisplayBlocks[0];
+  }
+
+  private async getPostId() {
+    const pid = await this.redis.get('spottitPostId');
+    if (pid) {
+        return pid;
+    }
+    return "";
+  }
+
+
+  private isScreenWide() {
+    const width = this._context.dimensions?.width ?? null;
+    return width == null ||  width < 688 ? false : true;
+  }
+
 }
 
 Devvit.addTrigger({
@@ -651,8 +835,6 @@ Devvit.addCustomPostType({
           }
         }}>
           <image
-            //width= {UIdisplayBlocks.zoomView ? "688px" : "100%"}
-            //height={UIdisplayBlocks.zoomView ? "921.6px" : "100%"}
             width= {UIdisplayBlocks.zoomView ? "688px" : "344px"}
             height={UIdisplayBlocks.zoomView ? "921.6px" : "460.8px"}
             url= {imageURL}
@@ -696,6 +878,26 @@ Devvit.addCustomPostType({
         Attempts: {userGameStatus.attemptsCount} 
       </text>
     </hstack> );
+
+
+
+    const game = new SpottitGame(context);
+    
+    let cp: JSX.Element;
+    switch (game.currentPage) {
+      case Pages.Picture:
+        cp = <PictureBlock game={game} />;
+        break;
+      case Pages.Help:
+        cp = <HelpBlock game={game} />;
+        break;
+      case Pages.LeaderBoard:
+        cp = <LeaderBoardBlock game={game} />;
+        break;
+      case Pages.MarkSpotsInfo:
+        cp = <MarkSpotsInfo game={game} />;
+        break;
+    }
 
     if( imageURL!="" ) {
       return (
@@ -808,6 +1010,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     const myPostId = post.id;
     const currentUsr = await context.reddit.getCurrentUser();
     const currentUsrName = currentUsr?.username ?? "";
+    await redis.set('spottitPostId', myPostId, {expiration: expireTime});
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
