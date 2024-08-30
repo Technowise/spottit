@@ -62,7 +62,7 @@ class SpottitGame {
   private readonly _currentTime: UseStateResult<number>;
   private readonly _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
-  private currPage: Pages;
+  private _currPage: Pages;
   private redis: RedisClient;
   private _ScreenIsWide: boolean;
   private _context: ContextAPIClients;
@@ -74,11 +74,13 @@ class SpottitGame {
   private _userGameStatus: UseStateResult<UserGameState>;
   private _validTileSpotsMarkingDone: UseStateResult<boolean>;
   private _leaderBoardRec:UseStateResult<leaderBoard[]>;
+  private _imageURL:UseStateResult<string>;
+  private _data: UseStateResult<number[]>;
 
   constructor( context: ContextAPIClients) {
     this._context = context;
     this._ui = context.ui;
-    this.currPage = Pages.Picture;
+    this._currPage = Pages.Picture;
     this._currentTime = context.useState(0);
     this.redis = context.redis;
     this._ScreenIsWide = this.isScreenWide();
@@ -94,7 +96,7 @@ class SpottitGame {
     });
 
     this._authorName = context.useState(async () => {
-      const authorName = await this.redis.get(this._myPostId+'authorName');
+      const authorName = await this.redis.get(this._myPostId[0]+'authorName');
       if (authorName) {
           return authorName;
       }
@@ -139,7 +141,6 @@ class SpottitGame {
       return false;
     });
 
-
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
       const dBlocks:displayBlocks = {help:false, 
         picture: (this._authorName[0] == this._currentUsername[0]) && !this._validTileSpotsMarkingDone[0] && !this._ScreenIsWide ? false:  true,
@@ -154,7 +155,6 @@ class SpottitGame {
         Info: false};
       return dBlocks;
     });
-
 
     this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
       const previousLeaderBoard = await context.redis.hgetall(this._myPostId[0]);
@@ -181,6 +181,23 @@ class SpottitGame {
       return [];
     });
 
+    this._imageURL = context.useState(async () => {
+      const imageURL = await context.redis.get(this._myPostId[0]+'imageURL');
+      if (imageURL) {
+          return imageURL;
+      }
+      return "";
+    });
+
+    this._data = context.useState(
+      async () => {
+        const tilesDataStr = await context.redis.get(this._myPostId[0]+'TilesDataArray');
+        if (tilesDataStr && tilesDataStr.length > 0 ) {
+          return tilesDataStr.split(",").map(Number);
+        }
+        return tiles;//default to empty array.
+      }
+    );
 
     this._counterInterval = context.useInterval(() => {
       if (this.currentTime < 999) {
@@ -189,18 +206,18 @@ class SpottitGame {
     }, 1000);
 
 
-  
-    
   }
 
-
-
-  get currentPage() {
-    return this.currPage;
+  get currPage() {
+    return this._currPage;
   }
 
   get currentTime() {
     return this._currentTime[0];
+  }
+
+  get imageURL() {
+    return this._imageURL[0];
   }
 
   private set currentTime(value: number) {
@@ -208,13 +225,21 @@ class SpottitGame {
     this._currentTime[1](value);
   }
 
-  private set UIdisplayBlocks(value: displayBlocks) {
+  public set UIdisplayBlocks(value: displayBlocks) {
     this._UIdisplayBlocks[0] = value;
     this._UIdisplayBlocks[1](value);
   }
 
-  private get UIdisplayBlocks() {
+  public get UIdisplayBlocks() {
     return this._UIdisplayBlocks[0];
+  }
+
+  public get leaderBoardRec() {
+    return this._leaderBoardRec[0];
+  }
+
+  public get userGameStatus() {
+    return this._userGameStatus[0];
   }
 
   private async getPostId() {
@@ -225,11 +250,63 @@ class SpottitGame {
     return "";
   }
 
-
   private isScreenWide() {
     const width = this._context.dimensions?.width ?? null;
     return width == null ||  width < 688 ? false : true;
   }
+
+  public async  toggleValidTile( index=0 ) {
+    var d = this._data[0];
+    if(d[index] == 1 ) {
+      d[index] = 0;
+    }
+    else
+    {
+      d[index] = 1;
+    }
+    this._data[0] = d;
+    this._data[1](d);
+  }
+
+  public async checkIfTileIsValid(index:number) {
+    const ugs = this._userGameStatus[0];
+    if( this._data[0][index] ==  1 && this._userGameStatus[0].counter > 0 ) {
+      
+      this._context.ui.showToast({
+        text: "You have successfully found the spot in "+this._userGameStatus[0].counter+" seconds, Congratulations!",
+        appearance: 'success',
+      });
+      
+      ugs.state = gameStates.Finished;
+
+      const username = this._currentUsername[0]?? 'defaultUsername';
+      const leaderBoardArray = this.leaderBoardRec;
+      const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
+      leaderBoardArray.push(leaderBoardObj);
+      leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+      this._leaderBoardRec[0] = leaderBoardArray;
+      this._leaderBoardRec[1](leaderBoardArray);
+
+      await this.redis.hset(this._myPostId[0], { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
+    }
+    else {
+      this._context.ui.showToast({
+        text: "Sorry, that is not the right spot!",
+        appearance: 'neutral',
+      });        
+      ugs.attemptsCount = ugs.attemptsCount + 1;
+      await this.redis.set(this._myPostId[0]+this._currentUsername[0]+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
+
+      if (ugs.attemptsCount >= maxWrongAttempts ) {
+        await this.redis.set(this._myPostId[0]+this._currentUsername[0]+'GameAborted', 'true', {expiration: expireTime});
+        ugs.state = gameStates.Aborted;
+      }
+    }
+
+    this._userGameStatus[0] = ugs;
+    this._userGameStatus[1](ugs);
+  }
+
 
 }
 
@@ -264,6 +341,8 @@ Devvit.addCustomPostType({
       }
     );
 
+    let cp: JSX.Element;
+  
     const [currentUsername] = useState(async () => {
       const currentUser = await context.reddit.getCurrentUser();
       return currentUser?.username;
@@ -336,16 +415,7 @@ Devvit.addCustomPostType({
       return [];
     });
 
-    const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, leaderBoardRec, leaderBoardPageSize);
-
-    const [imageURL] = useState(async () => {
-      const imageURL = await redis.get(myPostId+'imageURL');
-      if (imageURL) {
-          return imageURL;
-      }
-      return "";
-    });
-
+  
     const [UIdisplayBlocks, setUIdisplayBlocks] = useState<displayBlocks>(() =>{
       const dBlocks:displayBlocks = {help:false, 
         picture: (authorName == currentUsername) && !validTileSpotsMarkingDone && !ScreenIsWide ? false:  true,
@@ -381,56 +451,7 @@ Devvit.addCustomPostType({
 
     context.useInterval(incrementCounter, 1000).start();
 
-    function showFullPicture() {
-      context.ui.navigateTo(imageURL);
-    }
 
-    async function toggleValidTile(context:Devvit.Context, index=0) {
-      var d = data;
-      if(d[index] == 1 ) {
-        d[index] = 0;
-      }
-      else
-      {
-        d[index] = 1;
-      }
-      setData(d);
-    }
-
-    async function checkIfTileIsValid(context:Devvit.Context, index:number) {
-      const ugs = userGameStatus;
-      if( data[index] ==  1 && userGameStatus.counter > 0 ) {
-        
-        context.ui.showToast({
-          text: "You have successfully found the spot in "+userGameStatus.counter+" seconds, Congratulations!",
-          appearance: 'success',
-        });
-        
-        ugs.state = gameStates.Finished
-        setUserGameStatus(ugs);
-        const username = currentUsername?? 'defaultUsername';
-        const leaderBoardArray = leaderBoardRec;
-        const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: userGameStatus.counter, attempts: userGameStatus.attemptsCount };
-        leaderBoardArray.push(leaderBoardObj);
-        leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-        setLeaderBoardRec(leaderBoardArray);
-        await redis.hset(myPostId, { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
-      }
-      else {
-        context.ui.showToast({
-          text: "Sorry, that is not the right spot!",
-          appearance: 'neutral',
-        });        
-        ugs.attemptsCount = ugs.attemptsCount + 1;
-        await redis.set(myPostId+currentUsername+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
-
-        if (ugs.attemptsCount >= maxWrongAttempts ) {
-          await redis.set(myPostId+currentUsername+'GameAborted', 'true', {expiration: expireTime});
-          ugs.state = gameStates.Aborted;
-        }
-      }
-      setUserGameStatus(ugs);
-    }
     
     async function deleteLeaderboardRec(username: string) {//TODO: Add confirmation dialog
       const leaderBoardArray = leaderBoardRec;
@@ -478,10 +499,10 @@ Devvit.addCustomPostType({
       <hstack
         onPress={() => {
           if( !validTileSpotsMarkingDone ) {
-            toggleValidTile(context, index);
+            game.toggleValidTile( index);
           } 
           else if( userGameStatus.state != gameStates.Aborted && currentUsername!= authorName ){
-            checkIfTileIsValid(context, index);
+            game.checkIfTileIsValid(index);
           }
         }}
         width = {`${size}px`}
@@ -491,7 +512,7 @@ Devvit.addCustomPostType({
       </hstack>
     ));  
 
-    const LeaderBoardBlock = () => UIdisplayBlocks.leaderBoard && (
+    const LeaderBoardBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
         <vstack  width="96%" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
@@ -711,7 +732,7 @@ Devvit.addCustomPostType({
       </hstack>
     );
 
-    const MarkSpotsInfo = () =>  UIdisplayBlocks.MarkSpotsInfo  && (     
+    const MarkSpotsInfo = ({ game }: { game: SpottitGame }) => (     
       <vstack width="344px" height={'100%'} alignment="start middle" backgroundColor='white' padding="medium">
         <hstack>
           <vstack width="300px" backgroundColor='white' alignment="center middle">
@@ -731,10 +752,10 @@ Devvit.addCustomPostType({
             <spacer size="small"></spacer>
 
             <button size="small" icon='close' onPress={() => {
-                                const dBlocks:displayBlocks = UIdisplayBlocks;
+                                const dBlocks:displayBlocks = game.UIdisplayBlocks;
                                 dBlocks.picture = true;
                                 dBlocks.MarkSpotsInfo = false;
-                                setUIdisplayBlocks(dBlocks);
+                                game.UIdisplayBlocks= dBlocks;
               }}>Close</button>
           </vstack>
         </hstack>
@@ -761,7 +782,7 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const HelpBlock = () => UIdisplayBlocks.help && (
+    const HelpBlock = ({ game }: { game: SpottitGame }) => (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">
           <text style="heading" size="large" weight='bold' alignment="middle center" width="290px" color='black'>
@@ -824,20 +845,20 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const PictureBlock = () => UIdisplayBlocks.picture && (
+    const PictureBlock = ({ game }: { game: SpottitGame }) => (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment= {UIdisplayBlocks.zoomView? UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'  onPress={() => {
-          if( UIdisplayBlocks.zoomView) {
-            const dBlocks:displayBlocks = UIdisplayBlocks;
+        <hstack width="344px" height="100%" alignment= { game.UIdisplayBlocks.zoomView? game.UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'  onPress={() => {
+          if( game.UIdisplayBlocks.zoomView) {
+            const dBlocks:displayBlocks = game.UIdisplayBlocks;
             dBlocks.zoomView = false;
             dBlocks.zoomSelect = true;
-            setUIdisplayBlocks(dBlocks);
+            game.UIdisplayBlocks = dBlocks;
           }
         }}>
           <image
             width= {UIdisplayBlocks.zoomView ? "688px" : "344px"}
             height={UIdisplayBlocks.zoomView ? "921.6px" : "460.8px"}
-            url= {imageURL}
+            url= {game.imageURL}
             imageHeight={752}
             imageWidth={752}
             resizeMode="fit"
@@ -879,12 +900,12 @@ Devvit.addCustomPostType({
       </text>
     </hstack> );
 
-
-
     const game = new SpottitGame(context);
+
+    const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
     
-    let cp: JSX.Element;
-    switch (game.currentPage) {
+    
+    switch (game.currPage) {
       case Pages.Picture:
         cp = <PictureBlock game={game} />;
         break;
@@ -899,14 +920,11 @@ Devvit.addCustomPostType({
         break;
     }
 
-    if( imageURL!="" ) {
+    if( game.imageURL!="" ) {
       return (
         <blocks height="tall">
           <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
-            <PictureBlock />
-            <HelpBlock />
-            <MarkSpotsInfo />
-            <LeaderBoardBlock />
+            {cp}
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => showHelpBlock()}></button><spacer size="small" />
