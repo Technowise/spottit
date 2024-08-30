@@ -87,6 +87,7 @@ class SpottitGame {
 
     this._myPostId = context.useState(async () => {
       const pid = await this.getPostId();
+      console.log("Post ID: "+pid);
       return pid;
     });
   
@@ -102,7 +103,6 @@ class SpottitGame {
       }
       return "";
     });
-
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
@@ -158,7 +158,7 @@ class SpottitGame {
     });
 
     this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
-      const previousLeaderBoard = await context.redis.hgetall(this._myPostId[0]);
+      const previousLeaderBoard = await context.redis.hGetAll(this._myPostId[0]);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
         var leaderBoardRecords: leaderBoard[] = [];
         for (const key in previousLeaderBoard) {
@@ -183,9 +183,11 @@ class SpottitGame {
     });
 
     this._imageURL = context.useState(async () => {
+      console.log("Trying to fetch imageURL for: "+ this._myPostId[0]+'imageURL')
       const imageURL = await context.redis.get(this._myPostId[0]+'imageURL');
       if (imageURL) {
-          return imageURL;
+        console.log("Found the image value: "+imageURL );
+        return imageURL;
       }
       return "";
     });
@@ -336,7 +338,6 @@ class SpottitGame {
     });
     this.UIdisplayBlocks = dBlocks;
   }
-
 
   public async deleteLeaderboardRec(username: string) {//TODO: Add confirmation dialog
     const leaderBoardArray = this.leaderBoardRec;
@@ -523,11 +524,6 @@ Devvit.addCustomPostType({
     context.useInterval(incrementCounter, 1000).start();
     */
 
-    function isScreenWide() {
-      const width = context.dimensions?.width ?? null;
-      return width == null ||  width < 688 ? false : true;
-    }
-
     const PictureTilesWidth = `${resolutionx * size}px`;
     const PictureTilesHeight = `${resolutiony * size}px`;
 
@@ -595,7 +591,6 @@ Devvit.addCustomPostType({
         </hstack>
       );
     };
-
 
     const InfoBlock = ({ game }: { game: SpottitGame }) => (     
     <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
@@ -775,14 +770,31 @@ Devvit.addCustomPostType({
         </hstack>
 
         <PictureTiles game={game}/>
-        <GameStartBlock game={game}/>
-        <GameFinishedBlock game={game} />
-        <InfoBlock game={game} />
-        <MaxAttemptsReachedBlock game={game}/>
-        <ConfirmShowSpotBlock game={game}/>
-        <ZoomSelectBlocks game={game}/>
+        {getPictureOverlayBlock(game)}
+        
+{/*         <ConfirmShowSpotBlock game={game}/>
+        <ZoomSelectBlocks game={game}/> */}
       </zstack>
     );
+
+    function getPictureOverlayBlock( game:SpottitGame) {
+
+      if( game.authorName == game.currentUsername) {
+        return  <InfoBlock game={game} />;
+      }
+      else if( game.userGameStatus.state == gameStates.NotStarted ) {
+        return <GameStartBlock game={game}/>;
+      }
+      else if (game.userGameStatus.state == gameStates.Finished) {
+        return <GameFinishedBlock game={game} />;
+      }
+      else if (game.userGameStatus.state == gameStates.Aborted && game.userGameStatus.attemptsCount == maxWrongAttempts ) {
+        return <MaxAttemptsReachedBlock game={game} />;
+      }
+
+      return null;
+
+    }
 
     const ZoomSelectBlocks = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
       <hstack width="344px" height="230.4px">
@@ -813,21 +825,6 @@ Devvit.addCustomPostType({
 
     const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
     
-    
-    const PictureTiles = () => (
-      <vstack
-        cornerRadius="small"
-        border="none"
-        height={PictureTilesHeight}
-        width={PictureTilesWidth}
-        backgroundColor='transparent'
-      >
-        {splitArray(pixels, resolutionx).map((row) => (
-          <hstack height="2.5%">{row}</hstack>
-        ))}
-      </vstack>
-    );
-
     const pixels = game.data.map((pixel, index) => (
       <hstack
         onPress={() => {
@@ -844,6 +841,21 @@ Devvit.addCustomPostType({
       >
       </hstack>
     ));
+
+    
+    const PictureTiles = () => (
+      <vstack
+        cornerRadius="small"
+        border="none"
+        height={PictureTilesHeight}
+        width={PictureTilesWidth}
+        backgroundColor='transparent'
+      >
+        {splitArray(pixels, resolutionx).map((row) => (
+          <hstack height="2.5%">{row}</hstack>
+        ))}
+      </vstack>
+    );
 
     switch (game.currPage) {
       case Pages.Picture:
@@ -925,7 +937,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
       },
     ],
   };
-  },  
+  },
   async (event, context) => {// onSubmit handler
     const ui  = context.ui;
     const reddit = context.reddit;
