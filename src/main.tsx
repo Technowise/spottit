@@ -59,7 +59,6 @@ type UserGameState = {
 }
 
 class SpottitGame {
-  private readonly _currentTime: UseStateResult<number>;
   private readonly _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
   private _currPage: UseStateResult<Pages>;
@@ -80,7 +79,6 @@ class SpottitGame {
   constructor( context: ContextAPIClients) {
     this._context = context;
     this._ui = context.ui;
-    this._currentTime = context.useState(0);
     this.redis = context.redis;
     this._ScreenIsWide = this.isScreenWide();
 
@@ -208,21 +206,14 @@ class SpottitGame {
       }
     );
 
-    this._counterInterval = context.useInterval(() => {
-      if (this.currentTime < 999) {
-        this.currentTime++;
-      }
-    }, 1000);
-
+    this._counterInterval = this._context.useInterval(this.incrementCounter, 1000);
+    //this._counterInterval.start();
   }
 
   get currPage() {
     return this._currPage[0];
   }
 
-  get currentTime() {
-    return this._currentTime[0];
-  }
 
   get authorName() {
     return this._authorName[0];
@@ -230,11 +221,6 @@ class SpottitGame {
 
   get imageURL() {
     return this._imageURL[0];
-  }
-
-  private set currentTime(value: number) {
-    this._currentTime[0] = value;
-    this._currentTime[1](value);
   }
 
   public set UIdisplayBlocks(value: displayBlocks) {
@@ -296,6 +282,20 @@ class SpottitGame {
         return pid;
     }
     return "";
+  }
+
+  private async incrementCounter()  {
+    if( this.userGameStatus.state == gameStates.Started && this.userGameStatus.attemptsCount < maxWrongAttempts) {
+      var timeNow = new Date().getTime();
+      const ugs = this.userGameStatus;
+      ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+
+      if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+        this.userGameStatus.counterStage = this.userGameStatus.counter
+        await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this.userGameStatus.counter.toString(), {expiration: expireTime} );
+      }
+      this.userGameStatus = ugs;
+    }
   }
 
   private isScreenWide() {
@@ -360,9 +360,8 @@ class SpottitGame {
     }
     //setLeaderBoardRec(updatedLeaderBoardArray);
     this.leaderBoardRec = updatedLeaderBoardArray;
-    await this.redis.hdel(this.myPostId, [username]);
+    await this.redis.hDel(this.myPostId, [username]);
   }
-
 
   public async checkIfTileIsValid(index:number) {
     const ugs = this._userGameStatus[0];
@@ -402,7 +401,6 @@ class SpottitGame {
     this._userGameStatus[0] = ugs;
     this._userGameStatus[1](ugs);
   }
-
 
   public toggleSpots() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
@@ -516,24 +514,6 @@ Devvit.addCustomPostType({
     const openUserPage = async (username: string) => {
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
     };
-
-   /* 
-    const incrementCounter = async () => {
-      if( userGameStatus.state == gameStates.Started && userGameStatus.attemptsCount < maxWrongAttempts) {
-        var timeNow = new Date().getTime();
-        const ugs = userGameStatus;
-        ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
-
-        if( userGameStatus.counter - userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-          userGameStatus.counterStage = userGameStatus.counter
-          await redis.set(myPostId+currentUsername+'CounterTracker', userGameStatus.counter.toString(), {expiration: expireTime} );
-        }
-        setUserGameStatus(ugs);
-      }
-    }
-
-    context.useInterval(incrementCounter, 1000).start();
-    */
 
     const PictureTilesWidth = `${resolutionx * size}px`;
     const PictureTilesHeight = `${resolutiony * size}px`;
@@ -819,15 +799,7 @@ Devvit.addCustomPostType({
       </hstack>
     </vstack>)
 
-    const StatusBlock = ({ game }: { game: SpottitGame }) => (
-    <hstack alignment="top end">
-      <text style="body" size='medium' weight="regular" width="85px">
-        Time: {game.userGameStatus.counter}&nbsp;
-      </text>
-      <text style="body" size='medium' weight="regular" width="80px">
-        Attempts: {game.userGameStatus.attemptsCount} 
-      </text>
-    </hstack> );
+
 
     const game = new SpottitGame(context);
 
@@ -850,7 +822,6 @@ Devvit.addCustomPostType({
       </hstack>
     ));
 
-    
     const PictureTiles = () => (
       <vstack
         cornerRadius="small"
@@ -865,23 +836,17 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-      /*
-    switch (game.currPage) {
-      case Pages.Picture:
-        cp = <PictureBlock game={game} />;
-        console.log("We're still here!");
-        break;
-      case Pages.Help:
-        cp = <HelpBlock game={game} />;
-        break;
-      case Pages.LeaderBoard:
-        cp = <LeaderBoardBlock game={game} />;
-        break;
-      case Pages.MarkSpotsInfo:
-        cp = <MarkSpotsInfo game={game} />;
-        break;
-    }
-    */
+
+    const StatusBlock = ({ game }: { game: SpottitGame }) => game.userGameStatus.state == gameStates.Started &&  (
+      <hstack alignment="top end">
+        <text style="body" size='medium' weight="regular" width="85px">
+          Time: {game.userGameStatus.counter}&nbsp;
+        </text>
+        <text style="body" size='medium' weight="regular" width="80px">
+          Attempts: {game.userGameStatus.attemptsCount} 
+        </text>
+      </hstack> );
+
     cp = [  <PictureBlock game={game} />,
       <HelpBlock game={game} />,
       <MarkSpotsInfo game={game} />,
