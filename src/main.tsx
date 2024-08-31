@@ -59,7 +59,7 @@ type UserGameState = {
 }
 
 class SpottitGame {
-  private readonly _counterInterval: UseIntervalResult;
+  private _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
   private _currPage: UseStateResult<Pages>;
   private redis: RedisClient;
@@ -108,10 +108,10 @@ class SpottitGame {
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
         const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, counterStage: 0, attemptsCount: 0 };
-        const redisValues = await this.redis.mget([ this._myPostId[0]+this._currentUsername[0]+'GameAborted', 
+        const redisValues = await this.redis.mGet([ this._myPostId[0]+this._currentUsername[0]+'GameAborted', 
                                                     this._myPostId[0]+this._currentUsername[0]+'CounterTracker', 
                                                     this._myPostId[0]+this._currentUsername[0]+'AttemptsCount']);
-        if(redisValues && redisValues.length == 3) 
+        if(redisValues && redisValues.length == 3)
         {
           if (redisValues[0] === 'true' ) {
             UGS.state = gameStates.Aborted;
@@ -131,9 +131,14 @@ class SpottitGame {
             }
           }
         }
+        console.log("Setting UGS value now...");
+        console.log(UGS);
         return UGS;
       }
     );
+
+    console.log("This is what is in the UGS now ...");
+    console.log(this.userGameStatus);
 
     this._validTileSpotsMarkingDone = context.useState(async () => {
       const ValidTileSpotsMarkingDone = await context.redis.get(this._myPostId[0]+'ValidTileSpotsMarkingDone');
@@ -205,7 +210,7 @@ class SpottitGame {
         return tiles;//default to empty array.
       }
     );
-
+    
     this._counterInterval = this._context.useInterval(this.incrementCounter, 1000);
     //this._counterInterval.start();
   }
@@ -248,6 +253,10 @@ class SpottitGame {
     this._leaderBoardRec[1](value);
   }
 
+  public set counterInterval(value: UseIntervalResult ) {
+    this._counterInterval = value;
+  }
+  
   public get UIdisplayBlocks() {
     return this._UIdisplayBlocks[0];
   }
@@ -285,14 +294,15 @@ class SpottitGame {
   }
 
   private async incrementCounter()  {
-    if( this.userGameStatus.state == gameStates.Started && this.userGameStatus.attemptsCount < maxWrongAttempts) {
+
+    if( this._userGameStatus[0].state == gameStates.Started && this._userGameStatus[0].attemptsCount < maxWrongAttempts) {
       var timeNow = new Date().getTime();
-      const ugs = this.userGameStatus;
+      const ugs = this._userGameStatus[0];
       ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
 
-      if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-        this.userGameStatus.counterStage = this.userGameStatus.counter
-        await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this.userGameStatus.counter.toString(), {expiration: expireTime} );
+      if( this._userGameStatus[0].counter - this._userGameStatus[0].counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+        this._userGameStatus[0].counterStage = this._userGameStatus[0].counter
+        await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
       }
       this.userGameStatus = ugs;
     }
@@ -437,35 +447,19 @@ class SpottitGame {
   }
 
   public showHelpBlock() {
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    if( ! this._ScreenIsWide ) { //Hide picture in small screen to make space.
-      dBlocks.picture = false;
-    }
-    dBlocks.help = true;
-    dBlocks.leaderBoard = false;
-    this.UIdisplayBlocks = dBlocks;
+    this.currPage = Pages.Help;
   }
   
   public showLeaderboardBlock() {
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    dBlocks.picture = false;
-    dBlocks.help = false;
-    dBlocks.leaderBoard = true;
-    this.UIdisplayBlocks = dBlocks;
+    this.currPage = Pages.LeaderBoard;
   }
 
   public hideLeaderboardBlock() {
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    dBlocks.picture = true;
-    dBlocks.leaderBoard = false;
-    this.UIdisplayBlocks  = dBlocks;
+    this.currPage = Pages.Picture;
   }
 
   public hideHelpBlock() {
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    dBlocks.picture = true;
-    dBlocks.help = false;
-    this.UIdisplayBlocks = dBlocks;
+    this.currPage = Pages.Picture;
   }
 
   public startOrResumeGame(){
@@ -477,6 +471,9 @@ class SpottitGame {
     dBlocks.spots = false;
     dBlocks.spotTiles = true;
     this.UIdisplayBlocks = dBlocks;
+
+   // this.counterInterval = this._context.useInterval(this.incrementCounter, 1000);
+   // this._counterInterval.start();
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
@@ -646,9 +643,9 @@ Devvit.addCustomPostType({
             </text>
             <spacer size="small"></spacer>
 
-            <button size="small" icon='close' onPress={() => {
+            <button size="small" icon='joined' onPress={() => {
                                 game.currPage = Pages.Picture;
-              }}>Close</button>
+              }}>Start marking!</button>
           </vstack>
         </hstack>
       </vstack>
@@ -766,6 +763,10 @@ Devvit.addCustomPostType({
     );
 
     function getPictureOverlayBlock( game:SpottitGame) {
+
+      if( game.UIdisplayBlocks.spots ) {
+        return null;
+      }
 
       if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
