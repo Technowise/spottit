@@ -62,7 +62,7 @@ class SpottitGame {
   private readonly _currentTime: UseStateResult<number>;
   private readonly _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
-  private _currPage: Pages;
+  private _currPage: UseStateResult<Pages>;
   private redis: RedisClient;
   private _ScreenIsWide: boolean;
   private _context: ContextAPIClients;
@@ -80,7 +80,6 @@ class SpottitGame {
   constructor( context: ContextAPIClients) {
     this._context = context;
     this._ui = context.ui;
-    this._currPage = Pages.Picture;
     this._currentTime = context.useState(0);
     this.redis = context.redis;
     this._ScreenIsWide = this.isScreenWide();
@@ -89,6 +88,10 @@ class SpottitGame {
       const pid = await this.getPostId();
       console.log("Post ID: "+pid);
       return pid;
+    });
+
+    this._currPage = context.useState(async () => {
+      return Pages.Picture;
     });
   
     this._currentUsername = context.useState(async () => {
@@ -137,8 +140,11 @@ class SpottitGame {
     this._validTileSpotsMarkingDone = context.useState(async () => {
       const ValidTileSpotsMarkingDone = await context.redis.get(this._myPostId[0]+'ValidTileSpotsMarkingDone');
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
+        console.log("Returning true here.");
         return true;
       }
+      this.currPage = Pages.MarkSpotsInfo;
+      console.log("Returning false here.");
       return false;
     });
 
@@ -211,7 +217,7 @@ class SpottitGame {
   }
 
   get currPage() {
-    return this._currPage;
+    return this._currPage[0];
   }
 
   get currentTime() {
@@ -244,6 +250,11 @@ class SpottitGame {
   public set userGameStatus(value: UserGameState) {
     this._userGameStatus[0] = value;
     this._userGameStatus[1](value);
+  }
+
+  public set currPage(value: Pages) {
+    this._currPage[0] = value;
+    this._currPage[1](value);
   }
 
   public set leaderBoardRec(value: leaderBoard[]) {
@@ -500,7 +511,7 @@ Devvit.addCustomPostType({
     const { useState } = context;
     const {redis, postId } = context;
     const myPostId = postId ?? 'defaultPostId';
-    let cp: JSX.Element;
+    let cp: JSX.Element[];
  
     const openUserPage = async (username: string) => {
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
@@ -656,10 +667,7 @@ Devvit.addCustomPostType({
             <spacer size="small"></spacer>
 
             <button size="small" icon='close' onPress={() => {
-                                const dBlocks:displayBlocks = game.UIdisplayBlocks;
-                                dBlocks.picture = true;
-                                dBlocks.MarkSpotsInfo = false;
-                                game.UIdisplayBlocks= dBlocks;
+                                game.currPage = Pages.Picture;
               }}>Close</button>
           </vstack>
         </hstack>
@@ -779,10 +787,10 @@ Devvit.addCustomPostType({
 
     function getPictureOverlayBlock( game:SpottitGame) {
 
-      if( game.authorName == game.currentUsername) {
+      if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state == gameStates.NotStarted ) {
+      else if( game.userGameStatus.state == gameStates.NotStarted  && game.validTileSpotsMarkingDone ) {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
@@ -857,9 +865,11 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
+      /*
     switch (game.currPage) {
       case Pages.Picture:
         cp = <PictureBlock game={game} />;
+        console.log("We're still here!");
         break;
       case Pages.Help:
         cp = <HelpBlock game={game} />;
@@ -871,12 +881,18 @@ Devvit.addCustomPostType({
         cp = <MarkSpotsInfo game={game} />;
         break;
     }
+    */
+    cp = [  <PictureBlock game={game} />,
+      <HelpBlock game={game} />,
+      <MarkSpotsInfo game={game} />,
+      <LeaderBoardBlock game={game} />
+     ];
 
     if( game.imageURL!="" ) {
       return (
         <blocks height="tall">
           <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
-            {cp}
+            {cp[game.currPage]}
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => game.showHelpBlock()}></button><spacer size="small" />
