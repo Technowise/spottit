@@ -82,9 +82,24 @@ class SpottitGame {
     this.redis = context.redis;
     this._ScreenIsWide = this.isScreenWide();
 
+    this._counterInterval = context.useInterval( async () => {
+
+      if( this.userGameStatus.state == gameStates.Started && this.userGameStatus.attemptsCount < maxWrongAttempts) {
+        var timeNow = new Date().getTime();
+        const ugs = this.userGameStatus;
+        ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+  
+        if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
+          this.userGameStatus.counterStage = this.userGameStatus.counter
+          await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
+        }
+        this.userGameStatus = ugs;
+      }
+
+    }, 1000);
+
     this._myPostId = context.useState(async () => {
       const pid = await this.getPostId();
-      console.log("Post ID: "+pid);
       return pid;
     });
 
@@ -131,23 +146,16 @@ class SpottitGame {
             }
           }
         }
-        console.log("Setting UGS value now...");
-        console.log(UGS);
         return UGS;
       }
     );
 
-    console.log("This is what is in the UGS now ...");
-    console.log(this.userGameStatus);
-
     this._validTileSpotsMarkingDone = context.useState(async () => {
       const ValidTileSpotsMarkingDone = await context.redis.get(this._myPostId[0]+'ValidTileSpotsMarkingDone');
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
-        console.log("Returning true here.");
         return true;
       }
       this.currPage = Pages.MarkSpotsInfo;
-      console.log("Returning false here.");
       return false;
     });
 
@@ -192,10 +200,8 @@ class SpottitGame {
     });
 
     this._imageURL = context.useState(async () => {
-      console.log("Trying to fetch imageURL for: "+ this._myPostId[0]+'imageURL')
       const imageURL = await context.redis.get(this._myPostId[0]+'imageURL');
       if (imageURL) {
-        console.log("Found the image value: "+imageURL );
         return imageURL;
       }
       return "";
@@ -210,15 +216,11 @@ class SpottitGame {
         return tiles;//default to empty array.
       }
     );
-    
-    this._counterInterval = this._context.useInterval(this.incrementCounter, 1000);
-    //this._counterInterval.start();
   }
 
   get currPage() {
     return this._currPage[0];
   }
-
 
   get authorName() {
     return this._authorName[0];
@@ -474,6 +476,7 @@ class SpottitGame {
 
    // this.counterInterval = this._context.useInterval(this.incrementCounter, 1000);
    // this._counterInterval.start();
+    this._counterInterval.start();
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
@@ -496,6 +499,7 @@ Devvit.addTrigger({
     await redis.del(event.postId+'authorName');
     await redis.del(event.postId+'ValidTileSpotsMarkingDone');
     await redis.del(event.postId+'TilesDataArray');
+    await redis.del('spottitPostId');
   },
 });
 
@@ -756,9 +760,8 @@ Devvit.addCustomPostType({
 
         <PictureTiles game={game}/>
         {getPictureOverlayBlock(game)}
-        
 {/*         <ConfirmShowSpotBlock game={game}/>
-        <ZoomSelectBlocks game={game}/> */}
+         */}
       </zstack>
     );
 
@@ -768,10 +771,14 @@ Devvit.addCustomPostType({
         return null;
       }
 
+      if(game.UIdisplayBlocks.zoomSelect ) {
+        return  <ZoomSelectBlocks game={game} />;
+      }
+
       if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state == gameStates.NotStarted  && game.validTileSpotsMarkingDone ) {
+      else if( game.userGameStatus.state == gameStates.Paused ||  (game.userGameStatus.state == gameStates.NotStarted  && game.validTileSpotsMarkingDone ) ) {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
@@ -837,13 +844,12 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-
     const StatusBlock = ({ game }: { game: SpottitGame }) => game.userGameStatus.state == gameStates.Started &&  (
       <hstack alignment="top end">
         <text style="body" size='medium' weight="regular" width="85px">
-          Time: {game.userGameStatus.counter}&nbsp;
+          Time: {game.userGameStatus.counter}
         </text>
-        <text style="body" size='medium' weight="regular" width="80px">
+        <text style="body" size='medium' weight="regular" width="90px">
           Attempts: {game.userGameStatus.attemptsCount} 
         </text>
       </hstack> );
