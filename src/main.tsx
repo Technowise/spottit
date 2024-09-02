@@ -760,8 +760,6 @@ Devvit.addCustomPostType({
 
         <PictureTiles game={game}/>
         {getPictureOverlayBlock(game)}
-{/*         <ConfirmShowSpotBlock game={game}/>
-         */}
       </zstack>
     );
 
@@ -769,13 +767,14 @@ Devvit.addCustomPostType({
 
       if( game.UIdisplayBlocks.spots ) {
         return null;
-      }
-
-      if(game.UIdisplayBlocks.zoomSelect ) {
+      } 
+      else if( game.UIdisplayBlocks.confirmShowSpot ) {
+        return <ConfirmShowSpotBlock game={game}/>;
+      } 
+      else if(game.UIdisplayBlocks.zoomSelect ) {
         return  <ZoomSelectBlocks game={game} />;
       }
-
-      if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
+      else if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
       else if( game.userGameStatus.state == gameStates.Paused ||  (game.userGameStatus.state == gameStates.NotStarted  && game.validTileSpotsMarkingDone ) ) {
