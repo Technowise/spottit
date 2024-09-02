@@ -507,9 +507,6 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
-    const { useState } = context;
-    const {redis, postId } = context;
-    const myPostId = postId ?? 'defaultPostId';
     let cp: JSX.Element[];
  
     const openUserPage = async (username: string) => {
@@ -805,8 +802,6 @@ Devvit.addCustomPostType({
         </hstack>
       </hstack>
     </vstack>)
-
-
 
     const game = new SpottitGame(context);
 
