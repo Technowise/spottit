@@ -777,8 +777,20 @@ Devvit.addCustomPostType({
       if( ! game.UIdisplayBlocks.zoomView) {
         return <PictureTiles  game={game} />
       }
+      var quadrantNumber = 1;
+      switch( game.UIdisplayBlocks.zoomAlignment) {
+        case "top end":
+          quadrantNumber = 2;
+        break;
+        case "bottom start":
+          quadrantNumber = 3;
+        break;
+        case "bottom end":
+          quadrantNumber = 4;
+        break;
+      }
 
-      var q = getQuadrant(2, game.data, resolutionx);
+      var q = getQuadrant(quadrantNumber, game.data, resolutionx);
       let rows: JSX.Element[];
       rows = [];
       for( var i=0; i< q.length; i++) {
