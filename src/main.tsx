@@ -4,7 +4,9 @@ Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
 const resolutiony = 34;
-const size = 16;
+//const size = 16;
+const sizex = 15.59;
+const sizey = 16;
 //const size = 15.8;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
@@ -482,8 +484,8 @@ Devvit.addCustomPostType({
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
     };
 
-    const PictureTilesWidth = `${resolutionx * size}px`;
-    const PictureTilesHeight = `${resolutiony * size}px`;
+    const PictureTilesWidth = `${resolutionx * sizex}px`;
+    const PictureTilesHeight = `${resolutiony * sizey}px`;
 
     console.log("Picture tiles height: "+PictureTilesHeight);
     console.log("Picture tiles width: "+PictureTilesWidth);
@@ -776,7 +778,7 @@ Devvit.addCustomPostType({
         return <PictureTiles  game={game} />
       }
 
-      var q = getQuadrant(3, game.data, resolutionx);
+      var q = getQuadrant(2, game.data, resolutionx);
       let rows: JSX.Element[];
       rows = [];
       for( var i=0; i< q.length; i++) {
@@ -799,10 +801,10 @@ Devvit.addCustomPostType({
               });
             }
           }}
-          width = {`${size * 2}px`}
-          height = {`${size * 2}px`}
+          width = {`${sizex * 2}px`}
+          height = {`${sizey * 2}px`}
           //backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-          backgroundColor={bg_color}  //border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+          backgroundColor={bg_color}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
         >
         </hstack>)
 
@@ -875,10 +877,10 @@ Devvit.addCustomPostType({
             game.checkIfTileIsValid(index);
           }
         }}
-        width = {`${size}px`}
-        height = {`${size}px`}
+        width = {`${sizex}px`}
+        height = {`${sizey}px`}
         //backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  // border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));
