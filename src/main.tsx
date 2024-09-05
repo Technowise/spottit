@@ -73,7 +73,7 @@ class SpottitGame {
   private _imageURL:UseStateResult<string>;
   private _data: UseStateResult<number[]>;
 
-  constructor( context: ContextAPIClients) {
+  constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
     this._ui = context.ui;
     this.redis = context.redis;
@@ -96,8 +96,7 @@ class SpottitGame {
     }, 1000);
 
     this._myPostId = context.useState(async () => {
-      const pid = await this.getPostId();
-      return pid;
+      return postId;
     });
 
     this._currPage = context.useState(async () => {
@@ -282,14 +281,6 @@ class SpottitGame {
 
   public get currentUsername() {
     return this._currentUsername[0];
-  }
-
-  private async getPostId() {
-    const pid = await this.redis.get('spottitPostId');
-    if (pid) {
-        return pid;
-    }
-    return "";
   }
 
   private isScreenWide() {
@@ -478,7 +469,6 @@ Devvit.addTrigger({
     await redis.del(event.postId+'authorName');
     await redis.del(event.postId+'ValidTileSpotsMarkingDone');
     await redis.del(event.postId+'TilesDataArray');
-    await redis.del('spottitPostId');
   },
 });
 
@@ -865,9 +855,8 @@ Devvit.addCustomPostType({
       </hstack>
     </vstack>)
 
-    //const myPostId = context.post.id;
-    //context.postId
-    const game = new SpottitGame(context);
+    const myPostId = context.postId ?? 'defaultPostId';
+    const game = new SpottitGame(context, myPostId);
 
     const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
     
@@ -1027,8 +1016,6 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     const myPostId = post.id;
     const currentUsr = await context.reddit.getCurrentUser();
     const currentUsrName = currentUsr?.username ?? "";
-    await redis.set('spottitPostId', myPostId, {expiration: expireTime});
-    console.log("yelo, imageurl key is here: "+ myPostId+'imageURL');
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
