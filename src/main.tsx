@@ -865,7 +865,7 @@ Devvit.addCustomPostType({
       </hstack>
     </vstack>)
 
-    //const myPostId = post.id;
+    //const myPostId = context.post.id;
     const game = new SpottitGame(context);
 
     const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
