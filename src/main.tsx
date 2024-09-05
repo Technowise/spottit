@@ -1,11 +1,9 @@
-//import {Devvit} from '@devvit/public-api'
 import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient } from '@devvit/public-api';
-
-Devvit.configure({redditAPI: true, redis: true });
 import { usePagination } from '@devvit/kit';
+Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
-const resolutiony = 40;
+const resolutiony = 34;
 const size = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
@@ -65,7 +63,6 @@ class SpottitGame {
   private redis: RedisClient;
   private _ScreenIsWide: boolean;
   private _context: ContextAPIClients;
-
   private _UIdisplayBlocks: UseStateResult<displayBlocks>;
   private _myPostId: UseStateResult<string>;
   private _currentUsername: UseStateResult<string>;
@@ -295,21 +292,6 @@ class SpottitGame {
     return "";
   }
 
-  private async incrementCounter()  {
-
-    if( this._userGameStatus[0].state == gameStates.Started && this._userGameStatus[0].attemptsCount < maxWrongAttempts) {
-      var timeNow = new Date().getTime();
-      const ugs = this._userGameStatus[0];
-      ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
-
-      if( this._userGameStatus[0].counter - this._userGameStatus[0].counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-        this._userGameStatus[0].counterStage = this._userGameStatus[0].counter
-        await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
-      }
-      this.userGameStatus = ugs;
-    }
-  }
-
   private isScreenWide() {
     const width = this._context.dimensions?.width ?? null;
     return width == null ||  width < 688 ? false : true;
@@ -394,7 +376,7 @@ class SpottitGame {
       this._leaderBoardRec[0] = leaderBoardArray;
       this._leaderBoardRec[1](leaderBoardArray);
 
-      await this.redis.hset(this._myPostId[0], { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
+      await this.redis.hSet(this._myPostId[0], { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
     }
     else {
       this._context.ui.showToast({
@@ -473,9 +455,6 @@ class SpottitGame {
     dBlocks.spots = false;
     dBlocks.spotTiles = true;
     this.UIdisplayBlocks = dBlocks;
-
-   // this.counterInterval = this._context.useInterval(this.incrementCounter, 1000);
-   // this._counterInterval.start();
     this._counterInterval.start();
   }
 
@@ -516,6 +495,9 @@ Devvit.addCustomPostType({
     const PictureTilesWidth = `${resolutionx * size}px`;
     const PictureTilesHeight = `${resolutiony * size}px`;
 
+    console.log("Picture tiles height: "+PictureTilesHeight);
+    console.log("Picture tiles width: "+PictureTilesWidth);
+
     function splitArray<T>(array: T[], segmentLength: number): T[][] {
       const result: T[][] = [];
       for (let i = 0; i < array.length; i += segmentLength) {
@@ -523,6 +505,44 @@ Devvit.addCustomPostType({
       }
       return result;
     }
+
+    function getQuadrant<T>(quadrantNumber: number, array: T[],segmentLength: number) {
+      const q1: T[][] = [];
+      const q2: T[][] = [];
+      const q3: T[][] = [];
+      const q4: T[][] = [];
+  
+      for (let i = 0; i < array.length/2; i += segmentLength) {
+          q1.push(array.slice(i, i + (segmentLength/2) ));
+          q2.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
+      }
+  
+      for (let i = array.length/2; i < array.length; i += segmentLength) {
+          q3.push(array.slice(i, i + (segmentLength/2) ));
+          q4.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
+      }
+
+      console.log("Q1");
+      console.log(q1);
+      console.log("Q2");
+      console.log(q2);
+      console.log("Q3");
+      console.log(q3);
+      console.log("Q4");
+      console.log(q4);
+  
+      if( quadrantNumber == 1 ) {
+          return q1;
+      }
+      else if( quadrantNumber == 2 ) {
+          return q2;
+      }
+      else if( quadrantNumber == 3 ) {
+          return q3;
+      }
+      
+      return q4;
+  }    
     
     const LeaderBoardBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
@@ -755,10 +775,52 @@ Devvit.addCustomPostType({
           />
         </hstack>
 
-        <PictureTiles game={game}/>
+        {getPictureTilesBlock(game)}
         {getPictureOverlayBlock(game)}
       </zstack>
     );
+
+    function getPictureTilesBlock( game:SpottitGame) {
+
+      if( ! game.UIdisplayBlocks.zoomView) {
+        return <PictureTiles  game={game} />
+      }
+
+      var q = getQuadrant(2, game.data, resolutionx);
+      //console.log(q);
+      let rows: JSX.Element[];
+      rows = [];
+      for( var i=0; i< q.length; i++) {
+        let columns: JSX.Element[];
+        columns = [];
+        for(var j =0; j< q[i].length; j++) {
+          columns.push ( <hstack
+          onPress={() => {
+             if( game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName && q[i][j] == 1 ){
+              //game.checkIfTileIsValid(index);
+              context.ui.showToast({
+                text: "You have successfully found the spot in some seconds, Congratulations!",
+                appearance: 'success',
+              });
+            }
+          }}
+          width = {`${size * 2}px`}
+          height = {`${size * 2}px`}
+          //backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+          backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+        >
+        </hstack>)
+
+        }
+
+        rows.push(<hstack height="5%">{columns}</hstack> )
+
+      }
+
+     return   <vstack cornerRadius="small" border="none" height={PictureTilesHeight} width={PictureTilesWidth} backgroundColor='transparent' >
+        {rows}
+      </vstack>;
+    }
 
     function getPictureOverlayBlock( game:SpottitGame) {
 
@@ -819,12 +881,13 @@ Devvit.addCustomPostType({
         }}
         width = {`${size}px`}
         height = {`${size}px`}
-        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+        //backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border="thin" borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));
 
-    const PictureTiles = () => (
+    const PictureTiles = ({ game }: { game: SpottitGame }) => (
       <vstack
         cornerRadius="small"
         border="none"
