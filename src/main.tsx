@@ -1026,6 +1026,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     const currentUsr = await context.reddit.getCurrentUser();
     const currentUsrName = currentUsr?.username ?? "";
     await redis.set('spottitPostId', myPostId, {expiration: expireTime});
+    console.log("yelo, imageurl key is here: "+ myPostId+'imageURL');
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
