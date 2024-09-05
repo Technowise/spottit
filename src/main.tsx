@@ -5,6 +5,7 @@ Devvit.configure({redditAPI: true, redis: true });
 const resolutionx = 22;
 const resolutiony = 34;
 const size = 16;
+//const size = 15.8;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 1728000;//20 days in seconds.
 const maxWrongAttempts = 20;
@@ -343,7 +344,6 @@ class SpottitGame {
         updatedLeaderBoardArray.splice(i, i+1);
       }
     }
-    //setLeaderBoardRec(updatedLeaderBoardArray);
     this.leaderBoardRec = updatedLeaderBoardArray;
     await this.redis.hDel(this.myPostId, [username]);
   }
@@ -776,14 +776,19 @@ Devvit.addCustomPostType({
         return <PictureTiles  game={game} />
       }
 
-      var q = getQuadrant(2, game.data, resolutionx);
-      //console.log(q);
+      var q = getQuadrant(3, game.data, resolutionx);
       let rows: JSX.Element[];
       rows = [];
       for( var i=0; i< q.length; i++) {
         let columns: JSX.Element[];
         columns = [];
         for(var j =0; j< q[i].length; j++) {
+           var bg_color =  'transparent'
+          if( q[i][j] == 1 ) {
+            console.log("Found 1 at i = "+i+" and  j = "+j);
+            console.log(q[i][j]);
+            bg_color = 'rgba(28, 29, 28, 0.70)';
+          }
           columns.push ( <hstack
           onPress={() => {
              if( game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName && q[i][j] == 1 ){
@@ -797,7 +802,7 @@ Devvit.addCustomPostType({
           width = {`${size * 2}px`}
           height = {`${size * 2}px`}
           //backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-          backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+          backgroundColor={bg_color}  //border="thin" borderColor='rgba(28, 29, 28, 0.70)'
         >
         </hstack>)
 
@@ -873,7 +878,7 @@ Devvit.addCustomPostType({
         width = {`${size}px`}
         height = {`${size}px`}
         //backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  // border="thin" borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));
@@ -1033,7 +1038,6 @@ Devvit.addMenuItem({
   onPress: async (_, context) => {
     const subreddit = await context.reddit.getCurrentSubreddit();
     const flairTemplates = await subreddit.getPostFlairTemplates();
-    // Create an array of options for the dropdown
     const options = flairTemplates.map(template => {
       return { label: template.text, value: template.id };
     });
