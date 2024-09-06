@@ -458,6 +458,8 @@ class SpottitGame {
     dBlocks.zoomAlignment = alignment;
     dBlocks.zoomSelect = false;
     this.UIdisplayBlocks = dBlocks;
+    this._context.ui.showToast({text: `Click on the zoom icon again to zoom out`,
+      appearance: 'neutral'});
   }
 
 }
@@ -488,9 +490,6 @@ Devvit.addCustomPostType({
     const PictureTilesWidth = `${resolutionx * sizex}px`;
     const PictureTilesHeight = `${resolutiony * sizey}px`;
 
-    console.log("Picture tiles height: "+PictureTilesHeight);
-    console.log("Picture tiles width: "+PictureTilesWidth);
-
     function splitArray<T>(array: T[], segmentLength: number): T[][] {
       const result: T[][] = [];
       for (let i = 0; i < array.length; i += segmentLength) {
@@ -509,28 +508,20 @@ Devvit.addCustomPostType({
           q1.push(array.slice(i, i + (segmentLength/2) ));
           q2.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
       }
-  
+
+      if( quadrantNumber == 1 ) {
+        return q1;
+      }
+      else if( quadrantNumber == 2 ) {
+        return q2;
+      }
+
       for (let i = array.length/2; i < array.length; i += segmentLength) {
           q3.push(array.slice(i, i + (segmentLength/2) ));
           q4.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
       }
-
-      console.log("Q1");
-      console.log(q1);
-      console.log("Q2");
-      console.log(q2);
-      console.log("Q3");
-      console.log(q3);
-      console.log("Q4");
-      console.log(q4);
   
-      if( quadrantNumber == 1 ) {
-          return q1;
-      }
-      else if( quadrantNumber == 2 ) {
-          return q2;
-      }
-      else if( quadrantNumber == 3 ) {
+      if( quadrantNumber == 3 ) {
           return q3;
       }
       
@@ -792,19 +783,24 @@ Devvit.addCustomPostType({
       }
 
       var q = getQuadrant(quadrantNumber, game.data, resolutionx);
-      let rows: JSX.Element[];
-      
-      rows = [];
+      let rows: JSX.Element[] = [];
+      let border:Devvit.Blocks.Thickness="none";
+
+      if( ! game.validTileSpotsMarkingDone ) {
+        border="thin";
+      }
+
       for( var i=0; i< q.length; i++) {
-        let columns: JSX.Element[];
-        columns = [];
+        let columns: JSX.Element[] = [];
         for(var j =0; j< q[i].length; j++) {
            var bg_color =  'transparent'
            let onTilePress = async () => {
             await game.incrementAttempts();
           }
           if( q[i][j] == 1 ) {
-            bg_color = 'rgba(28, 29, 28, 0.70)';
+            if( game.UIdisplayBlocks.spots ){
+              bg_color = 'rgba(28, 29, 28, 0.70)';
+            }
             onTilePress = async () => {
               await game.finishGame();
             }
@@ -813,8 +809,7 @@ Devvit.addCustomPostType({
           onPress={onTilePress}
           width = {`${sizex * 2}px`}
           height = {`${sizey * 2}px`}
-          //backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-          backgroundColor={bg_color}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+          backgroundColor={bg_color}  borderColor='rgba(28, 29, 28, 0.70)' border={border}
         >
         </hstack>)
 
@@ -887,8 +882,8 @@ Devvit.addCustomPostType({
         }}
         width = {`${sizex}px`}
         height = {`${sizey}px`}
-        //backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-        backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
+        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
+        //backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
       >
       </hstack>
     ));
