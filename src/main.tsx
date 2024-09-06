@@ -588,11 +588,13 @@ Devvit.addCustomPostType({
     const InfoBlock = ({ game }: { game: SpottitGame }) => (     
     <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
       <hstack>
-        <hstack width="300px" >
+        <vstack width="300px" alignment='center middle'>
           <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
             Your Spottit post is ready for others to play. There have been {game.leaderBoardRec.length} players who have taken part so far.
           </text>
-        </hstack>
+          <spacer size="medium"/>
+          <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
+        </vstack>
       </hstack>
     </vstack>
     );
@@ -657,7 +659,7 @@ Devvit.addCustomPostType({
       );
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
-    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.85)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
       <button appearance="success" onPress={()=> game.startOrResumeGame()} > { game.userGameStatus.counterStage == 0 ? "Start!": "Resume!"}  </button>
@@ -667,6 +669,8 @@ Devvit.addCustomPostType({
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others. </text>
+        <spacer size="medium"/>
+        <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
       </vstack>
     );
 
@@ -926,7 +930,14 @@ Devvit.addCustomPostType({
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => game.showHelpBlock()}></button><spacer size="small" />
-            {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <><button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" /></>:""}
+            {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <>
+            <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
+            </>:""}
+
+            {game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Started && game.authorName != game.currentUsername ? <>
+            <button icon='add' appearance="success" size="small" onPress={async ()=>await showCreatePostForm(context)}></button>
+            <spacer size="small" />
+            </>:""}
             
             {game.userGameStatus.state == gameStates.Started? <><button icon="show" size="small" onPress={() => {
               const dBlocks:displayBlocks = game.UIdisplayBlocks;
@@ -1041,6 +1052,8 @@ Devvit.addMenuItem({
   label: 'Create a Spottit post',
   location: 'subreddit',
   onPress: async (_, context) => {
+    await showCreatePostForm(context);
+    /*
     const subreddit = await context.reddit.getCurrentSubreddit();
     const flairTemplates = await subreddit.getPostFlairTemplates();
     const options = flairTemplates.map(template => {
@@ -1048,5 +1061,17 @@ Devvit.addMenuItem({
     });
     
     context.ui.showForm(pictureInputForm, {flairOptions: options});
+    */
   },
 });
+
+async function showCreatePostForm(context:ContextAPIClients) {
+
+  const subreddit = await context.reddit.getCurrentSubreddit();
+  const flairTemplates = await subreddit.getPostFlairTemplates();
+  const options = flairTemplates.map(template => {
+    return { label: template.text, value: template.id };
+  });
+  
+  context.ui.showForm(pictureInputForm, {flairOptions: options});
+}
