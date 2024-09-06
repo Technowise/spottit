@@ -348,45 +348,48 @@ class SpottitGame {
     await this.redis.hDel(this.myPostId, [username]);
   }
 
-  public async checkIfTileIsValid(index:number) {
-    const ugs = this._userGameStatus[0];
-    if( this._data[0][index] ==  1 && this._userGameStatus[0].counter > 0 ) {
-      
-      this._context.ui.showToast({
-        text: "You have successfully found the spot in "+this._userGameStatus[0].counter+" seconds, Congratulations!",
-        appearance: 'success',
-      });
-      
-      ugs.state = gameStates.Finished;
-
-      const username = this._currentUsername[0]?? 'defaultUsername';
-      const leaderBoardArray = this.leaderBoardRec;
-      const leaderBoardObj:leaderBoard  = { username:username, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
-      leaderBoardArray.push(leaderBoardObj);
-      leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-      this._leaderBoardRec[0] = leaderBoardArray;
-      this._leaderBoardRec[1](leaderBoardArray);
-
-      await this.redis.hSet(this._myPostId[0], { [username]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
-    }
-    else {
-      this._context.ui.showToast({
-        text: "Sorry, that is not the right spot!",
-        appearance: 'neutral',
-      });        
-      ugs.attemptsCount = ugs.attemptsCount + 1;
-      await this.redis.set(this._myPostId[0]+this._currentUsername[0]+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
-
-      if (ugs.attemptsCount >= maxWrongAttempts ) {
-        await this.redis.set(this._myPostId[0]+this._currentUsername[0]+'GameAborted', 'true', {expiration: expireTime});
-        ugs.state = gameStates.Aborted;
-      }
-    }
-
-    this._userGameStatus[0] = ugs;
-    this._userGameStatus[1](ugs);
+  public async finishGame() {
+    this._context.ui.showToast({
+      text: "You have successfully found the spot in "+this.userGameStatus.counter+" seconds, Congratulations!",
+      appearance: 'success',
+    });
+    const ugs = this.userGameStatus;    
+    ugs.state = gameStates.Finished;
+    const leaderBoardArray = this.leaderBoardRec;
+    const leaderBoardObj:leaderBoard  = { username:this.currentUsername, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
+    leaderBoardArray.push(leaderBoardObj);
+    leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+    this._leaderBoardRec[0] = leaderBoardArray;
+    this._leaderBoardRec[1](leaderBoardArray);
+    await this.redis.hSet(this._myPostId[0], { [this.currentUsername]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
+    this.userGameStatus = ugs;
   }
 
+  public async incrementAttempts() {
+    const ugs = this.userGameStatus;
+    this._context.ui.showToast({
+      text: "Sorry, that is not the right spot!",
+      appearance: 'neutral',
+    });        
+    ugs.attemptsCount = ugs.attemptsCount + 1;
+    await this.redis.set(this.myPostId+this.currentUsername+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
+
+    if (ugs.attemptsCount >= maxWrongAttempts ) {
+      await this.redis.set(this.myPostId+this.currentUsername+'GameAborted', 'true', {expiration: expireTime});
+      ugs.state = gameStates.Aborted;
+    }
+
+    this.userGameStatus = ugs;
+  }
+
+  public async checkIfTileIsValid(index:number) {
+    if( this._data[0][index] ==  1 && this.userGameStatus.counter > 0 ) {
+      await this.finishGame();
+    }
+    else {
+      await this.incrementAttempts();
+    }
+  }
   public toggleSpots() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     dBlocks.spotTiles = true;
@@ -790,27 +793,24 @@ Devvit.addCustomPostType({
 
       var q = getQuadrant(quadrantNumber, game.data, resolutionx);
       let rows: JSX.Element[];
+      
       rows = [];
       for( var i=0; i< q.length; i++) {
         let columns: JSX.Element[];
         columns = [];
         for(var j =0; j< q[i].length; j++) {
            var bg_color =  'transparent'
+           let onTilePress = async () => {
+            await game.incrementAttempts();
+          }
           if( q[i][j] == 1 ) {
-            console.log("Found 1 at i = "+i+" and  j = "+j);
-            console.log(q[i][j]);
             bg_color = 'rgba(28, 29, 28, 0.70)';
+            onTilePress = async () => {
+              await game.finishGame();
+            }
           }
           columns.push ( <hstack
-          onPress={() => {
-             if( game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName && q[i][j] == 1 ){
-              //game.checkIfTileIsValid(index);
-              context.ui.showToast({
-                text: "You have successfully found the spot in some seconds, Congratulations!",
-                appearance: 'success',
-              });
-            }
-          }}
+          onPress={onTilePress}
           width = {`${sizex * 2}px`}
           height = {`${sizey * 2}px`}
           //backgroundColor={ game.UIdisplayBlocks.spots && q[i][j] == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
@@ -821,7 +821,6 @@ Devvit.addCustomPostType({
         }
 
         rows.push(<hstack height="5%">{columns}</hstack> )
-
       }
 
      return   <vstack cornerRadius="small" border="none" height={PictureTilesHeight} width={PictureTilesWidth} backgroundColor='transparent' >
@@ -854,7 +853,6 @@ Devvit.addCustomPostType({
       }
 
       return null;
-
     }
 
     const ZoomSelectBlocks = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
