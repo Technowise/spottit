@@ -4,12 +4,10 @@ Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
 const resolutiony = 34;
-//const size = 16;
 const sizex = 15.59;
 const sizey = 16;
-//const size = 15.8;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
-const redisExpireTimeSeconds = 1728000;//20 days in seconds.
+const redisExpireTimeSeconds = 2592000;//30 days in seconds.
 const maxWrongAttempts = 20;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
@@ -956,7 +954,7 @@ Devvit.addCustomPostType({
         return (
         <blocks height="tall">
         <hstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none" >
-          <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 20 days(Due to current Reddit Developer Platform limitations).</text>
+          <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 30 days(Due to current Reddit Developer Platform limitations).</text>
         </hstack>
         </blocks>);   
     }
