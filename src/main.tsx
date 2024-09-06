@@ -703,7 +703,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            You can click on zoom icon and then select block of the image to zoom into. Once you find the thing/object, come back to full view (by clicking on zoom icon again) and click on the spot.
+            You can click on zoom icon and then select quadrant/block to zoom into. You can zoom out by by clicking on zoom icon again.
           </text>
           <spacer size="medium" />
           <hstack alignment='start middle'>
