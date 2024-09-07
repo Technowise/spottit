@@ -152,7 +152,9 @@ class SpottitGame {
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
         return true;
       }
-      this.currPage = Pages.MarkSpotsInfo;
+      if( this.currentUsername == this.authorName ) {
+        this.currPage = Pages.MarkSpotsInfo;
+      }
       return false;
     });
 
@@ -696,9 +698,9 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Find thing/object in picture as per post title and click/tap on it when you spot it.
+                Find what's described in per post title and click/tap on it when you spot it.
           </text>
-          <spacer size="medium" />
+          <spacer size="small" />
 
           <hstack alignment='start middle'>
             <icon name="search" size="xsmall" color='black'></icon>
@@ -707,15 +709,18 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            You can click on zoom icon and then select quadrant/block to zoom into. You can zoom out by by clicking on zoom icon again.
+            Click on zoom icon and then select quadrant/block to zoom into. You can reset/zoom out by by clicking on zoom icon again.
           </text>
-          <spacer size="medium" />
+          <spacer size="small" />
+
           <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
               &nbsp; Abort game and show spot.
             </text>
           </hstack>
+          <spacer size="small" />
+
           <hstack>
             <text style="body" wrap size="medium" color='black'>
               Click on&nbsp;
@@ -725,7 +730,7 @@ Devvit.addCustomPostType({
               &nbsp;icon to abort game and show spot.
             </text>
           </hstack>
-          <spacer size="medium" />
+          <spacer size="small" />
           
           <hstack alignment='start middle'>
             <icon name="list-numbered" size="xsmall" color='black'></icon>
@@ -734,8 +739,20 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Click on Leaderboard button below to view time taken by participants.
-          </text>     
+            View time taken by other participants by clicking on `Leaderboard` button.
+          </text> 
+          <spacer size="small" />
+
+          <hstack alignment='start middle'>
+            <icon name="add" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; Create a new post.
+            </text>
+          </hstack>
+          <text style="body" wrap size="medium" color='black'>
+            Create a new post by clicking on `+` button.
+          </text>
+
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
           <button size="small" icon='close' onPress={() => game.hideHelpBlock()}>Close</button>
@@ -877,10 +894,10 @@ Devvit.addCustomPostType({
     const pixels = game.data.map((pixel, index) => (
       <hstack
         onPress={() => {
-          if( !game.validTileSpotsMarkingDone ) {
+          if( !game.validTileSpotsMarkingDone && game.currentUsername == game.authorName ) {
             game.toggleValidTile( index);
           } 
-          else if( game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName ){
+          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName ){
             game.checkIfTileIsValid(index);
           }
         }}
