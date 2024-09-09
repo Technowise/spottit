@@ -260,7 +260,7 @@ class SpottitGame {
     this._leaderBoardRec[1](value);
   }
 
-  public set data(value: number[]) {
+  private set data(value: number[]) {
     this._data[0] = value;
     this._data[1](value);
   }
