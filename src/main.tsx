@@ -904,7 +904,7 @@ Devvit.addCustomPostType({
           if( !game.validTileSpotsMarkingDone && game.userIsAuthor ) {
             game.toggleValidTile( index);
           } 
-          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && game.userIsAuthor ){
+          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && !game.userIsAuthor ){
             game.checkIfTileIsValid(index);
           }
         }}
