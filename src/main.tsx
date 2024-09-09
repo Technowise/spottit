@@ -161,15 +161,15 @@ class SpottitGame {
 
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
       const dBlocks:displayBlocks = {help:false, 
-        picture: (this._authorName[0] == this._currentUsername[0]) && !this._validTileSpotsMarkingDone[0] && !this._ScreenIsWide ? false:  true,
-        spotTiles:  (this._authorName[0] == this._currentUsername[0]) || this._userGameStatus[0].state == gameStates.Started || this._userGameStatus[0].state == gameStates.Aborted,
-        spots: !this._validTileSpotsMarkingDone[0] || this._userGameStatus[0].state == gameStates.Aborted ? true: false,
+        picture: this.userIsAuthor && !this.validTileSpotsMarkingDone && !this._ScreenIsWide ? false:  true,
+        spotTiles: this.userIsAuthor || this.userGameStatus.state == gameStates.Started || this.userGameStatus.state == gameStates.Aborted,
+        spots: !this.validTileSpotsMarkingDone || this.userGameStatus.state == gameStates.Aborted ? true: false,
         zoomView: false,
         zoomAlignment: "top start",
         zoomSelect:false,
         confirmShowSpot:false,
         leaderBoard: false,
-        MarkSpotsInfo: !this._validTileSpotsMarkingDone[0] && this._authorName[0] == this._currentUsername[0],
+        MarkSpotsInfo: !this.validTileSpotsMarkingDone && this.userIsAuthor,
         Info: false};
       return dBlocks;
     });
