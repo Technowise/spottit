@@ -186,8 +186,7 @@ class SpottitGame {
               usg.state = gameStates.Finished;
               usg.counter = redisLBObj.timeInSeconds;
               usg.attemptsCount = redisLBObj.attempts;
-              this._userGameStatus[0] = usg;
-              this._userGameStatus[1](usg);
+              this.userGameStatus = usg;
             }
             const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
             leaderBoardRecords.push(lbObj);
@@ -261,6 +260,11 @@ class SpottitGame {
     this._leaderBoardRec[1](value);
   }
 
+  public set data(value: number[]) {
+    this._data[0] = value;
+    this._data[1](value);
+  }
+
   public set counterInterval(value: UseIntervalResult ) {
     this._counterInterval = value;
   }
@@ -298,17 +302,16 @@ class SpottitGame {
     return width == null ||  width < 688 ? false : true;
   }
 
-  public async  toggleValidTile( index=0 ) {
-    var d = this._data[0];
-    if(d[index] == 1 ) {
+  public async toggleValidTile( index=0 ) {
+    var d = this.data;
+    if( d[index] == 1 ) {
       d[index] = 0;
     }
     else
     {
       d[index] = 1;
     }
-    this._data[0] = d;
-    this._data[1](d);
+    this.data = d;
   }
 
   public async finishMarkingSpots() {
@@ -368,8 +371,7 @@ class SpottitGame {
     const leaderBoardObj:leaderBoard  = { username:this.currentUsername, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
     leaderBoardArray.push(leaderBoardObj);
     leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-    this._leaderBoardRec[0] = leaderBoardArray;
-    this._leaderBoardRec[1](leaderBoardArray);
+    this.leaderBoardRec = leaderBoardArray;
     await this.redis.hSet(this._myPostId[0], { [this.currentUsername]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
     this.userGameStatus = ugs;
   }
@@ -399,6 +401,7 @@ class SpottitGame {
       await this.incrementAttempts();
     }
   }
+
   public toggleSpots() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     dBlocks.spotTiles = true;
