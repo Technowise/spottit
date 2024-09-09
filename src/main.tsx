@@ -1080,15 +1080,6 @@ Devvit.addMenuItem({
   location: 'subreddit',
   onPress: async (_, context) => {
     await showCreatePostForm(context);
-    /*
-    const subreddit = await context.reddit.getCurrentSubreddit();
-    const flairTemplates = await subreddit.getPostFlairTemplates();
-    const options = flairTemplates.map(template => {
-      return { label: template.text, value: template.id };
-    });
-    
-    context.ui.showForm(pictureInputForm, {flairOptions: options});
-    */
   },
 });
 
