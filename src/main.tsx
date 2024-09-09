@@ -73,6 +73,7 @@ class SpottitGame {
   private _leaderBoardRec:UseStateResult<leaderBoard[]>;
   private _imageURL:UseStateResult<string>;
   private _data: UseStateResult<number[]>;
+  private _userIsAuthor: boolean;
 
   constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
@@ -152,7 +153,7 @@ class SpottitGame {
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
         return true;
       }
-      if( this.currentUsername == this.authorName ) {
+      if( this.userIsAuthor ) {
         this.currPage = Pages.MarkSpotsInfo;
       }
       return false;
@@ -215,6 +216,12 @@ class SpottitGame {
         return tiles;//default to empty array.
       }
     );
+
+    this._userIsAuthor = this.currentUsername == this.authorName;
+  }
+
+  get userIsAuthor() {
+    return this._userIsAuthor;
   }
 
   get currPage() {
@@ -582,7 +589,7 @@ Devvit.addCustomPostType({
         <text style="body" size="small" color="black" width="30%" alignment="start">
           &nbsp;{row.timeInSeconds}
         </text>
-        {game.currentUsername == game.authorName? <text size="small" color="black" onPress={() => game.deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
+        { game.userIsAuthor ? <text size="small" color="black" onPress={() => game.deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
         </hstack>
       );
     };
@@ -855,10 +862,10 @@ Devvit.addCustomPostType({
       else if(game.UIdisplayBlocks.zoomSelect ) {
         return  <ZoomSelectBlocks game={game} />;
       }
-      else if( game.authorName == game.currentUsername && game.validTileSpotsMarkingDone ) {
+      else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state == gameStates.Paused ||  (game.userGameStatus.state == gameStates.NotStarted  && game.validTileSpotsMarkingDone ) ) {
+      else if( game.userGameStatus.state == gameStates.Paused ||  (game.userGameStatus.state == gameStates.NotStarted && game.validTileSpotsMarkingDone ) ) {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
@@ -894,10 +901,10 @@ Devvit.addCustomPostType({
     const pixels = game.data.map((pixel, index) => (
       <hstack
         onPress={() => {
-          if( !game.validTileSpotsMarkingDone && game.currentUsername == game.authorName ) {
+          if( !game.validTileSpotsMarkingDone && game.userIsAuthor ) {
             game.toggleValidTile( index);
           } 
-          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && game.currentUsername!= game.authorName ){
+          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && game.userIsAuthor ){
             game.checkIfTileIsValid(index);
           }
         }}
@@ -951,7 +958,7 @@ Devvit.addCustomPostType({
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
 
-            {game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Started && game.authorName != game.currentUsername ? <>
+            {game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Started && !game.userIsAuthor ? <>
             <button icon='add' appearance="success" size="small" onPress={async ()=>await showCreatePostForm(context)}></button>
             <spacer size="small" />
             </>:""}
@@ -960,13 +967,13 @@ Devvit.addCustomPostType({
               const dBlocks:displayBlocks = game.UIdisplayBlocks;
               dBlocks.confirmShowSpot = true;
               game.UIdisplayBlocks = dBlocks;
-            }}></button><spacer size="small" /></>: ""}
+            }}></button><spacer size="small" />
+            <button icon={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => game.toggleZoomSelect()} appearance={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "success" :  "secondary" } ></button>
+            <spacer size="small" /></>: ""}
             
-            {game.userGameStatus.state == gameStates.Started? <><button icon={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => game.toggleZoomSelect()} appearance={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "success" :  "secondary" } ></button><spacer size="small" /></> : ""}
-
-            { (game.authorName == game.currentUsername || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
+            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
             
-            {game.authorName == game.currentUsername && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
+            {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock game={game} />
           </hstack>
         </blocks>
