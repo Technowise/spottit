@@ -74,6 +74,7 @@ class SpottitGame {
   private _imageURL:UseStateResult<string>;
   private _data: UseStateResult<number[]>;
   private _userIsAuthor: boolean;
+  private _redisKeyPrefix: string;
 
   constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
@@ -90,7 +91,7 @@ class SpottitGame {
   
         if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
           this.userGameStatus.counterStage = this.userGameStatus.counter
-          await this.redis.set(this.myPostId+this.currentUsername+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
+          await this.redis.set(this.redisKeyPrefix+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
         }
         this.userGameStatus = ugs;
       }
@@ -111,7 +112,7 @@ class SpottitGame {
     });
 
     this._authorName = context.useState(async () => {
-      const authorName = await this.redis.get(this._myPostId[0]+'authorName');
+      const authorName = await this.redis.get(this.myPostId+'authorName');
       if (authorName) {
           return authorName;
       }
@@ -121,9 +122,9 @@ class SpottitGame {
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
         const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, counterStage: 0, attemptsCount: 0 };
-        const redisValues = await this.redis.mGet([ this._myPostId[0]+this._currentUsername[0]+'GameAborted', 
-                                                    this._myPostId[0]+this._currentUsername[0]+'CounterTracker', 
-                                                    this._myPostId[0]+this._currentUsername[0]+'AttemptsCount']);
+        const redisValues = await this.redis.mGet([ this.redisKeyPrefix+'GameAborted', 
+                                                    this.redisKeyPrefix+'CounterTracker', 
+                                                    this.redisKeyPrefix+'AttemptsCount']);
         if(redisValues && redisValues.length == 3)
         {
           if (redisValues[0] === 'true' ) {
@@ -149,7 +150,7 @@ class SpottitGame {
     );
 
     this._validTileSpotsMarkingDone = context.useState(async () => {
-      const ValidTileSpotsMarkingDone = await context.redis.get(this._myPostId[0]+'ValidTileSpotsMarkingDone');
+      const ValidTileSpotsMarkingDone = await context.redis.get(this.myPostId+'ValidTileSpotsMarkingDone');
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
         return true;
       }
@@ -175,13 +176,13 @@ class SpottitGame {
     });
 
     this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
-      const previousLeaderBoard = await context.redis.hGetAll(this._myPostId[0]);
+      const previousLeaderBoard = await context.redis.hGetAll(this.myPostId);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
         var leaderBoardRecords: leaderBoard[] = [];
         for (const key in previousLeaderBoard) {
           const redisLBObj = JSON.parse(previousLeaderBoard[key]);
           if( redisLBObj.username ) {
-            if(redisLBObj.username == this._currentUsername[0]) {
+            if(redisLBObj.username == this.currentUsername) {
               const usg = this._userGameStatus[0];
               usg.state = gameStates.Finished;
               usg.counter = redisLBObj.timeInSeconds;
@@ -199,7 +200,7 @@ class SpottitGame {
     });
 
     this._imageURL = context.useState(async () => {
-      const imageURL = await context.redis.get(this._myPostId[0]+'imageURL');
+      const imageURL = await context.redis.get(this.myPostId+'imageURL');
       if (imageURL) {
         return imageURL;
       }
@@ -208,7 +209,7 @@ class SpottitGame {
 
     this._data = context.useState(
       async () => {
-        const tilesDataStr = await context.redis.get(this._myPostId[0]+'TilesDataArray');
+        const tilesDataStr = await context.redis.get(this.myPostId+'TilesDataArray');
         if (tilesDataStr && tilesDataStr.length > 0 ) {
           return tilesDataStr.split(",").map(Number);
         }
@@ -217,10 +218,15 @@ class SpottitGame {
     );
 
     this._userIsAuthor = this.currentUsername == this.authorName;
+    this._redisKeyPrefix = this.myPostId + this.currentUsername;
   }
 
   get userIsAuthor() {
     return this._userIsAuthor;
+  }
+  
+  get redisKeyPrefix() {
+    return this._redisKeyPrefix;
   }
 
   get currPage() {
@@ -335,7 +341,7 @@ class SpottitGame {
 
   public async showTheSpotAndAbort(){
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    await this.redis.set(this.myPostId+this.currentUsername+'GameAborted', 'true', {expiration: expireTime});
+    await this.redis.set(this.redisKeyPrefix+'GameAborted', 'true', {expiration: expireTime});
     const ugs = this.userGameStatus;
     ugs.state = gameStates.Aborted;
     this.userGameStatus = ugs;
@@ -372,7 +378,7 @@ class SpottitGame {
     leaderBoardArray.push(leaderBoardObj);
     leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
     this.leaderBoardRec = leaderBoardArray;
-    await this.redis.hSet(this._myPostId[0], { [this.currentUsername]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
+    await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
     this.userGameStatus = ugs;
   }
 
@@ -383,10 +389,10 @@ class SpottitGame {
       appearance: 'neutral',
     });        
     ugs.attemptsCount = ugs.attemptsCount + 1;
-    await this.redis.set(this.myPostId+this.currentUsername+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
+    await this.redis.set(this.redisKeyPrefix+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
 
     if (ugs.attemptsCount >= maxWrongAttempts ) {
-      await this.redis.set(this.myPostId+this.currentUsername+'GameAborted', 'true', {expiration: expireTime});
+      await this.redis.set(this.redisKeyPrefix+'GameAborted', 'true', {expiration: expireTime});
       ugs.state = gameStates.Aborted;
     }
 
@@ -984,9 +990,11 @@ Devvit.addCustomPostType({
     } else {
         return (
         <blocks height="tall">
-        <hstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none" >
-          <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 30 days(Due to current Reddit Developer Platform limitations).</text>
-        </hstack>
+        <vstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none">
+            <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 30 days(Due to current Reddit Developer Platform limitations).</text>
+            <spacer size="medium"/>
+            <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
+        </vstack>
         </blocks>);   
     }
   }
@@ -996,6 +1004,8 @@ export default Devvit
 
 const pictureInputForm = Devvit.createForm(  (data) => {
   return {
+    title : "Create a Spottit post",
+    description:"Use of browser/desktop view is recommended for creating new posts.",
     fields: [
       {
         type: 'string',
@@ -1017,7 +1027,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
         label: 'Flair for the post',
         options: data.flairOptions,
         helpText: "Select flair for your post. This must be selected if this subreddit requires flair for posts.",
-        required: false,
+        required: data.flairOptions.length > 0 ? true: false,
       },
     ],
   };
