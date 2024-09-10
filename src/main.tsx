@@ -725,7 +725,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            Click on zoom icon and then select quadrant/block to zoom into. You can reset/zoom out by by clicking on zoom icon again.
+            Click on zoom icon and select quadrant/block to zoom into. Reset zoom (zoom-out) by clicking on zoom icon again.
           </text>
           <spacer size="small" />
 
@@ -846,16 +846,14 @@ Devvit.addCustomPostType({
           onPress={onTilePress}
           width = {`${sizex * 2}px`}
           height = {`${sizey * 2}px`}
-          backgroundColor={bg_color}  borderColor='rgba(28, 29, 28, 0.70)' border={border}
-        >
-        </hstack>)
-
+          backgroundColor={bg_color}  borderColor='rgba(28, 29, 28, 0.70)' border={border} >
+          </hstack>);
         }
 
         rows.push(<hstack height="5%">{columns}</hstack> )
       }
 
-     return   <vstack cornerRadius="small" border="none" height={PictureTilesHeight} width={PictureTilesWidth} backgroundColor='transparent' >
+     return <vstack cornerRadius="small" border="none" height={PictureTilesHeight} width={PictureTilesWidth} backgroundColor='transparent' >
         {rows}
       </vstack>;
     }
@@ -919,9 +917,7 @@ Devvit.addCustomPostType({
         }}
         width = {`${sizex}px`}
         height = {`${sizey}px`}
-        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'
-        //backgroundColor={ pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}  border="thin" borderColor='rgba(28, 29, 28, 0.70)'
-      >
+        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
       </hstack>
     ));
 
@@ -1026,7 +1022,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
         name: 'flair',
         label: 'Flair for the post',
         options: data.flairOptions,
-        helpText: "Select flair for your post. This must be selected if this subreddit requires flair for posts.",
+        helpText: "Select a flair for your post.",
         required: data.flairOptions.length > 0 ? true: false,
       },
     ],
