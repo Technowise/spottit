@@ -408,6 +408,10 @@ class SpottitGame {
     }
   }
 
+  public async openIntroPage(){
+    this._context.ui.navigateTo('https://www.reddit.com/r/Spottit/comments/1ethp30/introduction_to_spottit_game/');
+  };
+
   public toggleSpots() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     dBlocks.spotTiles = true;
@@ -701,12 +705,11 @@ Devvit.addCustomPostType({
     const HelpBlock = ({ game }: { game: SpottitGame }) => (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">
-          <text style="heading" size="large" weight='bold' alignment="middle center" width="290px" color='black'>
-              &nbsp;&nbsp;&nbsp;&nbsp;Help
+          <text style="heading" size="medium" weight='bold' alignment="middle center" width="100%" color='black'>
+              Help
           </text>
-          <button size="small" icon='close' width="34px" onPress={() => game.hideHelpBlock()}></button>
         </hstack>
-        <vstack height="80%" width="100%" padding="medium">
+        <vstack height="82%" width="100%" padding="medium">
           <hstack alignment='start middle'>
             <icon name="tap" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -714,7 +717,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-                Find what's described in per post title and click/tap on it when you spot it.
+                Find what's described in post title and click/tap on it when you spot it.
           </text>
           <spacer size="small" />
 
@@ -725,7 +728,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            Click on zoom icon and select quadrant/block to zoom into. Reset zoom (zoom-out) by clicking on zoom icon again.
+            Click zoom icon and select a quadrant to zoom into. To zoom-out, click on zoom icon again.
           </text>
           <spacer size="small" />
 
@@ -766,8 +769,9 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            Create a new post by clicking on `+` button.
+            Create a new post by clicking on `+` button. For more information, click here: 
           </text>
+          <button appearance="success" size="small" icon='info' onPress={async () => await game.openIntroPage()}>Introduction to Spottit</button>
 
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
