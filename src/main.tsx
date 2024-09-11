@@ -91,7 +91,8 @@ class SpottitGame {
   
         if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
           this.userGameStatus.counterStage = this.userGameStatus.counter
-          await this.redis.set(this.redisKeyPrefix+'CounterTracker', this._userGameStatus[0].counter.toString(), {expiration: expireTime} );
+          await this.redis.set(this.redisKeyPrefix+'CounterTracker', this.userGameStatus.counter.toString(), {expiration: expireTime} );
+          await this.redis.set(this.redisKeyPrefix+'AttemptsCount', this.userGameStatus.attemptsCount.toString(), {expiration: expireTime} );
         }
         this.userGameStatus = ugs;
       }
@@ -111,6 +112,8 @@ class SpottitGame {
       return currentUser?.username??'defaultUsername';
     });
 
+    this._redisKeyPrefix = this.myPostId + this.currentUsername;
+
     this._authorName = context.useState(async () => {
       const authorName = await this.redis.get(this.myPostId+'authorName');
       if (authorName) {
@@ -125,6 +128,7 @@ class SpottitGame {
         const redisValues = await this.redis.mGet([ this.redisKeyPrefix+'GameAborted', 
                                                     this.redisKeyPrefix+'CounterTracker', 
                                                     this.redisKeyPrefix+'AttemptsCount']);
+
         if(redisValues && redisValues.length == 3)
         {
           if (redisValues[0] === 'true' ) {
@@ -218,7 +222,6 @@ class SpottitGame {
     );
 
     this._userIsAuthor = this.currentUsername == this.authorName;
-    this._redisKeyPrefix = this.myPostId + this.currentUsername;
   }
 
   get userIsAuthor() {
@@ -462,16 +465,17 @@ class SpottitGame {
     this.currPage = Pages.Picture;
   }
 
-  public startOrResumeGame(){
+  public async startOrResumeGame(){
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     const ugs = this.userGameStatus;
-    ugs.state = gameStates.Started
+    ugs.state = gameStates.Started;
     ugs.startTime = new Date().getTime() -  (this.userGameStatus.counterStage * 1000 );
     this.userGameStatus = ugs;
     dBlocks.spots = false;
     dBlocks.spotTiles = true;
     this.UIdisplayBlocks = dBlocks;
     this._counterInterval.start();
+    await this.redis.set(this.redisKeyPrefix+'GameAborted', 'false', {expiration: expireTime});
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
