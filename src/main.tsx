@@ -843,7 +843,9 @@ Devvit.addCustomPostType({
               bg_color = 'rgba(28, 29, 28, 0.70)';
             }
             onTilePress = async () => {
-              await game.finishGame();
+              if( game.userGameStatus.state == gameStates.Started ) {
+                await game.finishGame();
+              }
             }
           }
           columns.push ( <hstack
@@ -913,9 +915,9 @@ Devvit.addCustomPostType({
       <hstack
         onPress={() => {
           if( !game.validTileSpotsMarkingDone && game.userIsAuthor ) {
-            game.toggleValidTile( index);
+            game.toggleValidTile(index);
           } 
-          else if( game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted && !game.userIsAuthor ){
+          else if( game.userGameStatus.state == gameStates.Started && !game.userIsAuthor ){
             game.checkIfTileIsValid(index);
           }
         }}
