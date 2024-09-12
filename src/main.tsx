@@ -626,7 +626,7 @@ Devvit.addCustomPostType({
     );
 
     const ConfirmShowSpotBlock = ({ game }: { game: SpottitGame }) => (
-      <hstack width="344px" height="100%" alignment="center middle" backgroundColor='transparent'>
+      <hstack width="344px" height="100%" alignment="middle center" backgroundColor='transparent'>
         <vstack  width="320px" height="45%" alignment="center middle" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
             <text style="heading" size="large" weight='bold' alignment="middle center" width="270px" color='black'>
@@ -997,7 +997,8 @@ Devvit.addCustomPostType({
         return (
         <blocks height="tall">
         <vstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none">
-            <text wrap width="80%" style="heading">This post has expired. Posts from Spottit app expires after 30 days(Due to current Reddit Developer Platform limitations).</text>
+            <text wrap width="80%" style="heading" alignment="center middle">This post has expired.</text>
+            <text wrap width="80%" style="body" alignment='center middle'>Posts from Spottit app expire after 30 days(Due to current Reddit Developer Platform limitations).</text>
             <spacer size="medium"/>
             <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
         </vstack>
