@@ -1,6 +1,9 @@
 import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
+import { ImageTransformer } from "js-image-lib";
+//import * as ImageTransformer from 'js-image-lib';
 Devvit.configure({redditAPI: true, redis: true });
+import {https} from 'https';
 
 const resolutionx = 22;
 const resolutiony = 34;
@@ -1083,6 +1086,9 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
+
+    //postImage
+    const inputJpeg = new Uint8Array(fs.readFileSync("./my-image.jpeg"));
   
     ui.showToast({
       text: `Successfully created a Spottit post! Please mark the spot that participants should find by going to your post.`,
