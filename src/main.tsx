@@ -685,7 +685,7 @@ Devvit.addCustomPostType({
       );
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
-    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.85)'>
+    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(0, 0, 0, 0.75)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
       <button appearance="success" onPress={()=> game.startOrResumeGame()} > { game.userGameStatus.counterStage == 0 ? "Start!": "Resume!"}  </button>
@@ -927,7 +927,7 @@ Devvit.addCustomPostType({
         }}
         width = {`${sizex}px`}
         height = {`${sizey}px`}
-        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(28, 29, 28, 0.70)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
+        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgb(255, 69, 0)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
       </hstack>
     ));
 
