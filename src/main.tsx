@@ -8,7 +8,7 @@ const sizex = 15.59;
 const sizey = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
-const maxWrongAttempts = 20;
+const maxWrongAttempts = 30;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
 const expireTime = new Date(dateNow.getTime() + milliseconds);
@@ -53,7 +53,6 @@ type UserGameState = {
   state: gameStates;
   startTime: number;
   counter: number;
-  counterStage: number;
   attemptsCount: number;
 }
 
@@ -88,11 +87,8 @@ class SpottitGame {
         var timeNow = new Date().getTime();
         const ugs = this.userGameStatus;
         ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
-  
-        if( this.userGameStatus.counter - this.userGameStatus.counterStage > 5 ) {//Every 5 seconds, put the counter to redis for tracking.
-          this.userGameStatus.counterStage = this.userGameStatus.counter
-          await this.redis.set(this.redisKeyPrefix+'CounterTracker', this.userGameStatus.counter.toString(), {expiration: expireTime} );
-          await this.redis.set(this.redisKeyPrefix+'AttemptsCount', this.userGameStatus.attemptsCount.toString(), {expiration: expireTime} );
+        if( ugs.counter > 1800 ) {//Max out the counter at 30 minutes.
+          ugs.counter = 1800
         }
         this.userGameStatus = ugs;
       }
@@ -124,9 +120,9 @@ class SpottitGame {
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
-        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, counterStage: 0, attemptsCount: 0 };
+        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0 };
         const redisValues = await this.redis.mGet([ this.redisKeyPrefix+'GameAborted', 
-                                                    this.redisKeyPrefix+'CounterTracker', 
+                                                    this.redisKeyPrefix+'StartTime', 
                                                     this.redisKeyPrefix+'AttemptsCount']);
 
         if(redisValues && redisValues.length == 3)
@@ -136,8 +132,7 @@ class SpottitGame {
           }
           else
           if (redisValues[1] && redisValues[1].length > 0 ) {
-            var counterIntValue = parseInt(redisValues[1]);
-            UGS.counter = UGS.counterStage = counterIntValue;
+            UGS.startTime = parseInt(redisValues[1]);
             UGS.state = gameStates.Paused;
           }
 
@@ -351,7 +346,7 @@ class SpottitGame {
     dBlocks.spots = true;
     dBlocks.confirmShowSpot = false;
     this._context.ui.showToast({
-      text: "You can find the object/thing behind the dark spots shown!",
+      text: "You can find the object/thing behind the red spots shown!",
       appearance: 'neutral',
     });
     this.UIdisplayBlocks = dBlocks;
@@ -415,6 +410,10 @@ class SpottitGame {
     this._context.ui.navigateTo('https://www.reddit.com/r/Spottit/comments/1ethp30/introduction_to_spottit_game/');
   };
 
+  public async openSourceImage(){
+    this._context.ui.navigateTo(this.imageURL);
+  };
+
   public toggleSpots() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     dBlocks.spotTiles = true;
@@ -469,13 +468,22 @@ class SpottitGame {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     const ugs = this.userGameStatus;
     ugs.state = gameStates.Started;
-    ugs.startTime = new Date().getTime() -  (this.userGameStatus.counterStage * 1000 );
+    var timeNow = new Date().getTime();
+    if( ugs.startTime == 0 ) { //First time the game is starting, set start time. 
+      ugs.startTime = new Date().getTime();
+      await this.redis.set(this.redisKeyPrefix+'StartTime', ugs.startTime.toString(), {expiration: expireTime});
+    }
+    ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
     this.userGameStatus = ugs;
     dBlocks.spots = false;
     dBlocks.spotTiles = true;
     this.UIdisplayBlocks = dBlocks;
     this._counterInterval.start();
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'false', {expiration: expireTime});
+    
+    this._context.ui.showToast({text: `Click on External icon(↗) to view full image`,
+      appearance: 'neutral'});
+    
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
@@ -668,7 +676,7 @@ Devvit.addCustomPostType({
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
               Use browser zoom features to zoom in and out while marking.
-              Wait a bit after each click for the box to fill with dark colour (there could be a little delay). To undo marking, click on the marked tile again.
+              Wait for the box to fill with red colour after tapping (there could be a slight delay). To undo marking, click on the marked tile again.
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
@@ -688,7 +696,7 @@ Devvit.addCustomPostType({
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(0, 0, 0, 0.75)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
-      <button appearance="success" onPress={()=> game.startOrResumeGame()} > { game.userGameStatus.counterStage == 0 ? "Start!": "Resume!"}  </button>
+      <button appearance="success" onPress={()=> game.startOrResumeGame()} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
     </vstack>
     );
   
@@ -711,20 +719,12 @@ Devvit.addCustomPostType({
         <hstack padding="small" width="100%">
           <text style="heading" size="medium" weight='bold' alignment="middle center" width="100%" color='black'>
               Help
+            
           </text>
         </hstack>
         <vstack height="82%" width="100%" padding="medium">
-          <hstack alignment='start middle'>
-            <icon name="tap" size="xsmall" color='black'></icon>
-            <text style="heading" size="medium" color='black'>
-              &nbsp; Find the spot in picture!
-            </text>
-          </hstack>
-          <text style="body" wrap size="medium" color='black'>
-                Find what's described in post title and click/tap on it when you spot it.
-          </text>
+          <button appearance="success" size="small" icon='info' onPress={async () => await game.openIntroPage()}>Introduction to Spottit</button>
           <spacer size="small" />
-
           <hstack alignment='start middle'>
             <icon name="search" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -737,13 +737,23 @@ Devvit.addCustomPostType({
           <spacer size="small" />
 
           <hstack alignment='start middle'>
+            <icon name="external" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; View Full Image.
+            </text>
+          </hstack>
+          <text style="body" wrap size="medium" color='black'>
+            View full image where you can do pinch and zoom.
+          </text> 
+          <spacer size="small" />
+
+          <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
               &nbsp; Abort game and show spot.
             </text>
           </hstack>
-          <spacer size="small" />
-
+          <spacer size="xsmall" />
           <hstack>
             <text style="body" wrap size="medium" color='black'>
               Click on&nbsp;
@@ -773,10 +783,8 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            Create a new post by clicking on `+` button. For more information, click here: 
+            Create a new post by clicking on `+` button.
           </text>
-          <button appearance="success" size="small" icon='info' onPress={async () => await game.openIntroPage()}>Introduction to Spottit</button>
-
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
           <button size="small" icon='close' onPress={() => game.hideHelpBlock()}>Close</button>
@@ -950,9 +958,6 @@ Devvit.addCustomPostType({
         <text style="body" size='medium' weight="regular" width="85px">
           Time: {game.userGameStatus.counter}
         </text>
-        <text style="body" size='medium' weight="regular" width="90px">
-          Attempts: {game.userGameStatus.attemptsCount} 
-        </text>
       </hstack> );
 
     cp = [  <PictureBlock game={game} />,
@@ -984,12 +989,17 @@ Devvit.addCustomPostType({
               game.UIdisplayBlocks = dBlocks;
             }}></button><spacer size="small" />
             <button icon={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => game.toggleZoomSelect()} appearance={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "success" :  "secondary" } ></button>
-            <spacer size="small" /></>: ""}
+            <spacer size="small" />
+            <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
+            </>: ""}
             
-            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="140px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide spots":"Show spots"} </button><spacer size="small" /></> : "" }
+            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
+            <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button>
+            </> : "" }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock game={game} />
+
           </hstack>
         </blocks>
       )
