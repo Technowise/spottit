@@ -118,6 +118,8 @@ class SpottitGame {
       return "";
     });
 
+    this._userIsAuthor = this.currentUsername == this.authorName;
+
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
         const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0 };
@@ -153,9 +155,11 @@ class SpottitGame {
       if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
         return true;
       }
+  
       if( this.userIsAuthor ) {
         this.currPage = Pages.MarkSpotsInfo;
       }
+      
       return false;
     });
 
@@ -216,7 +220,10 @@ class SpottitGame {
       }
     );
 
-    this._userIsAuthor = this.currentUsername == this.authorName;
+    
+
+
+  
   }
 
   get userIsAuthor() {
@@ -676,13 +683,13 @@ Devvit.addCustomPostType({
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
               Please mark tiles by clicking on the respective boxes. If the object corners run into other boxes, include those boxes too.
               Use browser zoom features to zoom in and out while marking.
-              Wait for the box to fill with red colour after tapping (there could be a slight delay). To undo marking, click on the marked tile again.
+              Wait for the box to fill with red colour after tapping. To undo marking, click on the marked tile again.
             </text>
             <spacer size="small"></spacer>
             <text width="300px" size="small" style='body' weight="regular" wrap color="black">
             After marking all the tiles, Click on 'Done marking!'.
             </text>
-            <spacer size="small"></spacer>
+            <spacer size="large"></spacer>
 
             <button size="small" icon='joined' onPress={() => {
                                 game.currPage = Pages.Picture;
