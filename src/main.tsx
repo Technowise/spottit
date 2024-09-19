@@ -383,7 +383,8 @@ class SpottitGame {
     leaderBoardArray.push(leaderBoardObj);
     leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
     this.leaderBoardRec = leaderBoardArray;
-    await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) }), {expiration: expireTime};
+    await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
+    await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
     this.userGameStatus = ugs;
   }
 
