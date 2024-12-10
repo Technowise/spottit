@@ -1,4 +1,6 @@
 TODO:
+Use Zoomist for zooming within webview.
+
 Make the spot to find blurred or not visible enough before starting the game.
 Record timestamp of start time in Redis. When resuming game, use that for finding number of seconds.- Done.
 Make it possible to select spots in zoomed-in view.- Done

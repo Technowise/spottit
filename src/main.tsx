@@ -56,6 +56,11 @@ type UserGameState = {
   attemptsCount: number;
 }
 
+type webviewDataRequest = {
+  type: string;
+};
+
+
 class SpottitGame {
   private _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
@@ -924,7 +929,16 @@ Devvit.addCustomPostType({
         <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => game.showZoomView("bottom end")}>
         </hstack>
       </hstack>
-    </vstack>)
+    </vstack>);
+
+    const ZoomistWebview = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+    <webview id="ZoomistWebview" width="310px" height="200px" url="zoomist-view.html"  onMessage={(msg) => {
+      const wr = msg as webviewDataRequest;
+      if( wr.type == "requestImage") {//Load image
+        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL });
+      }
+    }}/>
+    </vstack>);
 
     const myPostId = context.postId ?? 'defaultPostId';
     const game = new SpottitGame(context, myPostId);
