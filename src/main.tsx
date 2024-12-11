@@ -46,7 +46,8 @@ export enum Pages {
   Picture,
   Help,
   MarkSpotsInfo,
-  LeaderBoard
+  LeaderBoard,
+  ZoomView
 }
 
 type UserGameState = {
@@ -440,6 +441,19 @@ class SpottitGame {
   }
 
   public toggleZoomSelect() {
+
+    const dBlocks:displayBlocks = this.UIdisplayBlocks;
+    if( ! dBlocks.zoomView ) {
+      this.currPage = Pages.ZoomView;
+      dBlocks.zoomView = true;
+    } else {
+      this.currPage = Pages.Picture;
+      dBlocks.zoomView = false;
+    }
+
+    this.UIdisplayBlocks = dBlocks;
+
+/*
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     if( dBlocks.zoomView ){ //If already in zoom view, reset zoom and go back to full picture view
       dBlocks.spotTiles = true;
@@ -459,6 +473,7 @@ class SpottitGame {
       });
     }
     this.UIdisplayBlocks = dBlocks;
+  */
   }
 
   public showHelpBlock() {
@@ -931,8 +946,8 @@ Devvit.addCustomPostType({
       </hstack>
     </vstack>);
 
-    const ZoomistWebview = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
-    <webview id="ZoomistWebview" width="310px" height="200px" url="zoomist-view.html"  onMessage={(msg) => {
+    const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
+    <webview id="ZoomistWebview" width="344px" height="100%" url="zoom-view.html"  onMessage={(msg) => {
       const wr = msg as webviewDataRequest;
       if( wr.type == "requestImage") {//Load image
         context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL });
@@ -985,7 +1000,8 @@ Devvit.addCustomPostType({
     cp = [  <PictureBlock game={game} />,
       <HelpBlock game={game} />,
       <MarkSpotsInfo game={game} />,
-      <LeaderBoardBlock game={game} />
+      <LeaderBoardBlock game={game} />,
+      <ZoomistView game={game} />,
      ];
 
     if( game.imageURL!="" ) {
