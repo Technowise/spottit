@@ -30,10 +30,13 @@ window.onmessage = (ev) => {
       zoomistImageContainer.appendChild(image);
 
       const zoomist = new Zoomist('.zoomist-container', {
-        maxScale: 4,
-        /*initScale: 2, */
+        //maxScale: 1,
+        bounds: false,
+        /*initScale: 1,*/
+        initScale: 0.5,
         slider: true, 
-        zoomer: true
+        zoomer: true,
+        zoomRatio: 0.08
       });
   }
 

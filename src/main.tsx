@@ -946,8 +946,8 @@ Devvit.addCustomPostType({
       </hstack>
     </vstack>);
 
-    const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
-    <webview id="ZoomistWebview" width="344px" height="100%" url="zoom-view.html"  onMessage={(msg) => {
+    const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
+    <webview id="ZoomistWebview" width="100%" height="100%" /* height="460.8px"*/ url="zoom-view.html"  onMessage={(msg) => {
       const wr = msg as webviewDataRequest;
       if( wr.type == "requestImage") {//Load image
         context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL });
@@ -1007,10 +1007,10 @@ Devvit.addCustomPostType({
     if( game.imageURL!="" ) {
       return (
         <blocks height="tall">
-          <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" >
+          <hstack gap="small" width="100%" height="92%" alignment="middle center" borderColor="transparent" border="none" backgroundColor='yellow' >
             {cp[game.currPage]}
           </hstack>
-          <hstack alignment="middle center" width="100%" height="10%">
+          <hstack alignment="middle center" width="100%" height="8%">
             <button icon="help" size="small" onPress={() => game.showHelpBlock()}></button><spacer size="small" />
             {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <>
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />

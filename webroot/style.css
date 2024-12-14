@@ -16,7 +16,8 @@ body {
   }
 
   .zoomist-container img {
-    height: 100%;
+    /* height: 100%; */
+    height: 460.8px;
     width: 100%;
-
+    object-fit: contain;
   }
