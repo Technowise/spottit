@@ -509,7 +509,7 @@ class SpottitGame {
     this._counterInterval.start();
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'false', {expiration: expireTime});
     
-    this._context.ui.showToast({text: `Click on External icon(↗) to view full image`,
+    this._context.ui.showToast({text: `Click on 🔎 to enable zoom, or open full image using (↗) button`,
       appearance: 'neutral'});
     
   }
@@ -822,17 +822,10 @@ Devvit.addCustomPostType({
 
     const PictureBlock = ({ game }: { game: SpottitGame }) => (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment= { game.UIdisplayBlocks.zoomView? game.UIdisplayBlocks.zoomAlignment : "top start"} backgroundColor='transparent'  onPress={() => {
-          if( game.UIdisplayBlocks.zoomView) {
-            const dBlocks:displayBlocks = game.UIdisplayBlocks;
-            dBlocks.zoomView = false;
-            dBlocks.zoomSelect = true;
-            game.UIdisplayBlocks = dBlocks;
-          }
-        }}>
+        <hstack width="344px" height="100%" alignment= "top start" backgroundColor='transparent'>
           <image
-            width= {game.UIdisplayBlocks.zoomView ? "688px" : "344px"}
-            height={game.UIdisplayBlocks.zoomView ? "921.6px" : "460.8px"}
+            width= "344px" 
+            height="460.8px" 
             url= {game.imageURL}
             imageHeight={752}
             imageWidth={752}
@@ -846,62 +839,7 @@ Devvit.addCustomPostType({
     );
 
     function getPictureTilesBlock( game:SpottitGame) {
-
-      if( ! game.UIdisplayBlocks.zoomView) {
-        return <PictureTiles  game={game} />
-      }
-      var quadrantNumber = 1;
-      switch( game.UIdisplayBlocks.zoomAlignment) {
-        case "top end":
-          quadrantNumber = 2;
-        break;
-        case "bottom start":
-          quadrantNumber = 3;
-        break;
-        case "bottom end":
-          quadrantNumber = 4;
-        break;
-      }
-
-      var q = getQuadrant(quadrantNumber, game.data, resolutionx);
-      let rows: JSX.Element[] = [];
-      let border:Devvit.Blocks.Thickness="none";
-
-      if( ! game.validTileSpotsMarkingDone ) {
-        border="thin";
-      }
-
-      for( var i=0; i< q.length; i++) {
-        let columns: JSX.Element[] = [];
-        for(var j =0; j< q[i].length; j++) {
-           var bg_color =  'transparent'
-           let onTilePress = async () => {
-            await game.incrementAttempts();
-          }
-          if( q[i][j] == 1 ) {
-            if( game.UIdisplayBlocks.spots ){
-              bg_color = 'rgba(28, 29, 28, 0.70)';
-            }
-            onTilePress = async () => {
-              if( game.userGameStatus.state == gameStates.Started ) {
-                await game.finishGame();
-              }
-            }
-          }
-          columns.push ( <hstack
-          onPress={onTilePress}
-          width = {`${sizex * 2}px`}
-          height = {`${sizey * 2}px`}
-          backgroundColor={bg_color}  borderColor='rgba(28, 29, 28, 0.70)' border={border} >
-          </hstack>);
-        }
-
-        rows.push(<hstack height="5%">{columns}</hstack> )
-      }
-
-     return <vstack cornerRadius="small" border="none" height={PictureTilesHeight} width={PictureTilesWidth} backgroundColor='transparent' >
-        {rows}
-      </vstack>;
+      return <PictureTiles  game={game} />
     }
 
     function getPictureOverlayBlock( game:SpottitGame) {
@@ -911,9 +849,6 @@ Devvit.addCustomPostType({
       } 
       else if( game.UIdisplayBlocks.confirmShowSpot ) {
         return <ConfirmShowSpotBlock game={game}/>;
-      } 
-      else if(game.UIdisplayBlocks.zoomSelect ) {
-        return  <ZoomSelectBlocks game={game} />;
       }
       else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
@@ -931,20 +866,6 @@ Devvit.addCustomPostType({
       return null;
     }
 
-    const ZoomSelectBlocks = ({ game }: { game: SpottitGame }) => (<vstack width="344px" height="100%" alignment="top start" backgroundColor='transparent'>
-      <hstack width="344px" height="230.4px">
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => game.showZoomView("top start")}>
-        </hstack>
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => game.showZoomView("top end")}>
-        </hstack>
-      </hstack>
-      <hstack width="344px" height="230.4px">
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => game.showZoomView("bottom start")}>
-        </hstack>
-        <hstack width="172px" height="100%" borderColor='rgba(28, 29, 28, 0.70)' border="thin" backgroundColor='transparent' onPress={() => game.showZoomView("bottom end")}>
-        </hstack>
-      </hstack>
-    </vstack>);
 
     const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
     <webview id="ZoomistWebview" width="100%" height="100%" /* height="460.8px"*/ url="zoom-view.html"  onMessage={(msg) => {
@@ -1007,10 +928,10 @@ Devvit.addCustomPostType({
     if( game.imageURL!="" ) {
       return (
         <blocks height="tall">
-          <hstack gap="small" width="100%" height="92%" alignment="middle center" borderColor="transparent" border="none" backgroundColor='yellow' >
+          <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" backgroundColor='rgb(239, 239, 239)' >
             {cp[game.currPage]}
           </hstack>
-          <hstack alignment="middle center" width="100%" height="8%">
+          <hstack alignment="middle center" width="100%" height="10%">
             <button icon="help" size="small" onPress={() => game.showHelpBlock()}></button><spacer size="small" />
             {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <>
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
