@@ -20,3 +20,18 @@ body {
     width: 100%;
     object-fit: contain;
   }
+
+  .zoomist-container div.overlay {
+    position:absolute;
+    /*
+    top: 10px;
+    left: 10px;
+    */
+    height: 460.8px;
+    width: 344px;
+    background-color: yellow;
+    opacity: 0.5;
+    left: 50%;
+    transform: translate(-50%, 0);
+    top: 0;
+  }

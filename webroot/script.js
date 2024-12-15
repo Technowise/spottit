@@ -14,6 +14,7 @@ function loadImage() {
 }
 
 loadImage();
+var imageAdded = false;
 
 
 window.onmessage = (ev) => {
@@ -21,23 +22,40 @@ window.onmessage = (ev) => {
 
   var type = ev.data.data.message.type;
   
-  if (type  == "image") {
+  if (type  == "image" && !imageAdded ) {
       var url = ev.data.data.message.url;
       console.log("Got a new image...")
       console.log(url);
       const image = document.createElement("img");
       image.src = url;
+      image.id = "spottitImage"
       zoomistImageContainer.appendChild(image);
 
       const zoomist = new Zoomist('.zoomist-container', {
-        //maxScale: 1,
         bounds: false,
-        /*initScale: 1,*/
-        initScale: 0.5,
+        initScale: 1,
         slider: true, 
         zoomer: true,
         zoomRatio: 0.08
       });
+      imageAdded = true;
   }
+
+
+  if (true ) {
+
+    const div = document.createElement("div");
+    div.className = "overlay"
+
+    div.addEventListener("click", myFunction);
+
+    function myFunction() {
+     // alert ("Hello World!");
+      console.log("clicked on the red...")
+    } 
+
+    zoomistImageContainer.appendChild(div);
+  }
+
 
 }
