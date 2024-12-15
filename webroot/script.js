@@ -24,8 +24,10 @@ window.onmessage = (ev) => {
   
   if (type  == "image" && !imageAdded ) {
       var url = ev.data.data.message.url;
+      var tilesData =  ev.data.data.message.tilesData;
       console.log("Got a new image...")
       console.log(url);
+      console.log( tilesData );
       const image = document.createElement("img");
       image.src = url;
       image.id = "spottitImage"
@@ -47,15 +49,18 @@ window.onmessage = (ev) => {
     const div = document.createElement("div");
     div.className = "overlay"
 
+    /*
     div.addEventListener("click", myFunction);
 
     function myFunction() {
-     // alert ("Hello World!");
-      console.log("clicked on the red...")
+      //console.log("clicked on the red...")
     } 
+    */
 
+    const tc = document.createElement("div");
+    tc.className = "tiles-container";
+    div.appendChild(tc);
     zoomistImageContainer.appendChild(div);
   }
-
 
 }

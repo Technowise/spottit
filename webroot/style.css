@@ -23,15 +23,18 @@ body {
 
   .zoomist-container div.overlay {
     position:absolute;
-    /*
-    top: 10px;
-    left: 10px;
-    */
     height: 460.8px;
     width: 344px;
-    background-color: yellow;
     opacity: 0.5;
     left: 50%;
     transform: translate(-50%, 0);
     top: 0;
+  }
+
+  .zoomist-container div.overlay .tiles-container{
+    position:relative;
+    height: 100%;
+    width: 100%;
+    background-color: green;
+    opacity: 0.5;
   }

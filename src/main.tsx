@@ -866,10 +866,19 @@ Devvit.addCustomPostType({
 
 
     const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
-    <webview id="ZoomistWebview" width="100%" height="100%" /* height="460.8px"*/ url="zoom-view.html"  onMessage={(msg) => {
+    <webview id="ZoomistWebview" width="100%" height="100%" url="zoom-view.html"  onMessage={(msg) => {
       const wr = msg as webviewDataRequest;
+
+      const tilesData = {
+       data: game.data,
+       resolutionx : resolutionx,
+       resolutiony : resolutiony,
+       sizex: sizex,
+       sizey:sizey
+      };
+
       if( wr.type == "requestImage") {//Load image
-        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL });
+        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL, tilesData: tilesData });
       }
     }}/>
     </vstack>);
