@@ -655,7 +655,6 @@ Devvit.addCustomPostType({
             Your Spottit post is ready for others to play. There have been {game.leaderBoardRec.length} players who have taken part so far.
           </text>
           <spacer size="medium"/>
-          <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
         </vstack>
       </hstack>
     </vstack>
@@ -732,7 +731,6 @@ Devvit.addCustomPostType({
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others. </text>
         <spacer size="medium"/>
-        <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
       </vstack>
     );
 
@@ -938,7 +936,6 @@ Devvit.addCustomPostType({
             </>:""}
 
             {game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Started && !game.userIsAuthor ? <>
-            <button icon='add' appearance="success" size="small" onPress={async ()=>await showCreatePostForm(context)}></button>
             <spacer size="small" />
             </>:""}
             
@@ -969,7 +966,6 @@ Devvit.addCustomPostType({
             <text wrap width="80%" style="heading" alignment="center middle">This post has expired.</text>
             <text wrap width="80%" style="body" alignment='center middle'>Posts from Spottit app expire after 30 days(Due to current Reddit Developer Platform limitations).</text>
             <spacer size="medium"/>
-            <button appearance="success" onPress={async ()=>await showCreatePostForm(context)} icon='add' width="180px"> Create a new post  </button>
         </vstack>
         </blocks>);   
     }
