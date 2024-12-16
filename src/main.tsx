@@ -892,7 +892,7 @@ Devvit.addCustomPostType({
     if( game.imageURL!="" ) {
       return (
         <blocks height="tall">
-          <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none" backgroundColor='rgb(239, 239, 239)' >
+          <hstack gap="small" width="100%" height="90%" alignment="middle center" borderColor="transparent" border="none"  >
             {cp[game.currPage]}
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
