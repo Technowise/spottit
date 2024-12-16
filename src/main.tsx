@@ -694,22 +694,31 @@ Devvit.addCustomPostType({
     const HelpBlock = ({ game }: { game: SpottitGame }) => (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">
-          <text style="heading" size="medium" weight='bold' alignment="middle center" width="100%" color='black'>
+          <text style="heading" size="large" weight='bold' alignment="middle center" width="100%" color='black'>
               Help
-            
           </text>
         </hstack>
         <vstack height="82%" width="100%" padding="medium">
-          <button appearance="success" size="small" icon='info' onPress={async () => await game.openIntroPage()}>Introduction to Spottit</button>
           <spacer size="small" />
           <hstack alignment='start middle'>
             <icon name="search" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; Zoom to have a closer look.
+              &nbsp; Zooming & pan to have a closer look.
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            Click zoom icon and select a quadrant to zoom into. To zoom-out, click on zoom icon again.
+            You can pinch and zoom into sections of the image, and pan by dragging the image as needed.
+          </text>
+
+          <spacer size="small" />
+          <hstack alignment='start middle'>
+            <icon name="conversion" size="xsmall" color='black'></icon>
+            <text style="heading" size="medium" color='black'>
+              &nbsp; Marking/registering the spot
+            </text>
+          </hstack>
+          <text style="body" wrap size="medium" color='black'>
+            After you find the spot, you can double-tap/double-click on the spot to register. 
           </text>
           <spacer size="small" />
 
@@ -720,7 +729,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            View full image where you can do pinch and zoom.
+            You can view full image by clicking on the external icon.
           </text> 
           <spacer size="small" />
 
@@ -753,15 +762,6 @@ Devvit.addCustomPostType({
           </text> 
           <spacer size="small" />
 
-          <hstack alignment='start middle'>
-            <icon name="add" size="xsmall" color='black'></icon>
-            <text style="heading" size="medium" color='black'>
-              &nbsp; Create a new post.
-            </text>
-          </hstack>
-          <text style="body" wrap size="medium" color='black'>
-            Create a new post by clicking on `+` button.
-          </text>
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
           <button size="small" icon='close' onPress={() => game.hideHelpBlock()}>Close</button>
