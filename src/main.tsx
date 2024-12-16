@@ -498,6 +498,9 @@ class SpottitGame {
     this.currPage = Pages.ZoomView;
     dBlocks.zoomView = true;
     this.UIdisplayBlocks = dBlocks;
+
+    this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find the spot!`,
+      appearance: 'neutral'});
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
@@ -550,10 +553,9 @@ Devvit.addCustomPostType({
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
         <vstack  width="96%" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
-            <text style="heading" size="large" weight='bold' alignment="middle center" width="275px" color='black'>
-                &nbsp;&nbsp;&nbsp;&nbsp;Leaderboard
+            <text style="heading" size="large" weight='bold' alignment="middle center" width="100%" color='black'>
+                Leaderboard
             </text>
-            <button size="small" icon='close' width="34px" onPress={() => game.hideLeaderboardBlock()}></button>
           </hstack>
           <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%">
             <text style="heading" size="small" color="black" width="15%">
@@ -709,7 +711,7 @@ Devvit.addCustomPostType({
           <hstack alignment='start middle'>
             <icon name="search" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; Zooming & pan to have a closer look.
+              &nbsp; Zoom & pan to have a closer look.
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>

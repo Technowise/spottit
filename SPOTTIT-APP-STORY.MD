@@ -1,5 +1,5 @@
 ## Inspiration
-This is a game of spotting things in a posted picture - inspired by /r/FindTheSniper subreddit. The game intends to bring a fun competition among the Reddit community members with pictures posts that contain interesting things(related to your sub) camouflaged in them or contains something that is not very easy to spot. Though it is fun finding things from usual posts in /r/FindTheSniper, we would not be aware of how long the members took to find the said spot. So this app includes feature to measure time taken by each participant, which is then made available in the form of a leaderboard.
+This is a game of spotting things in a posted picture (inspired by /r/FindTheSniper subreddit). The game intends to bring a fun competition among the reddit community members with pictures posts that contain interesting things(related to your sub) camouflaged in them or contains something that is not very easy to spot(like a snake, an insect, a cat, or any small object). The app captures the time taken by each participant to find the spot and shows it in the leaderboard. Though it is fun finding things from usual posts in /r/FindTheSniper, we would not be aware of how long the members took to find the said spot.
 
 ## What it does
 The app adds ability to create picture posts where post creator can mark specific spots in a picture and then ask other users to find that spot. Each participant's time taken to find the spot is recorded and used for ranking in the Leader-board. This game provides a built-in zoom feature, using which players can do pinch and zoom into sections of the picture to find the said spot. Those who wish to view the solution/spot can click on the eye icon - this will also abort the game for that participant.
@@ -21,8 +21,11 @@ The app was failing to create posts where flairs are required and had certain co
 
 ## What we learned
 * Developing apps in a new platform can be both challenging and fulfilling experience.
-It is a fulfilling experience building something new in a platform in it's early stages, but it comes with it's own challenges - because when we run across an issue, we can't be sure if it an issue with the code, or due to an issue with the platform. However, I've come to realize the potential of this platform - expecially the ability to make custom apps with content from reddit at our disposal(through APIs), and making it quickly available to a large user base of reddit.
+It is a fulfilling experience building something new in a platform in it's early stages, but it comes with it's own challenges - because when we run across an issue, we can't be sure if it an issue with the code, or due to an issue with the platform. However, the devvit team provided great support! I've come to realize the potential of this platform - expecially the ability to make custom apps with content from reddit at our disposal(through APIs), and making it quickly available to a large user base of reddit.
 
 ## What's next for Spottit
-1. Make the process of creating a new post much simpler than how it is presently through use of webviews, and give ability to accurately mark the spot.
-2. 
+1. Make the process of creating a new post much simpler than how it is presently through use of webviews, and give ability mark the spot more accurately.
+2. Make animation on the double-clicked spot to indicate the exact spot that the user clicked (UX improvement).
+3. Blur the image shown before starting the game so that there is lesser chance of cheating (through use of developer tools).
+4. Make the UI more responsive - to give best view based on the screen-size.
+5. Add support for webp image format when it becomes available in devvit (presently webp uploads are not supported).
