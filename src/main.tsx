@@ -459,6 +459,15 @@ class SpottitGame {
     this.UIdisplayBlocks = dBlocks;
   }
 
+  public setHomepage() {
+    if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished ) {
+      this.currPage = Pages.Picture;
+    }
+    else if( this.userGameStatus.state == gameStates.Started) {
+      this.currPage = Pages.ZoomView;
+    }
+  }
+
   public showHelpBlock() {
     this.currPage = Pages.Help;
   }
@@ -468,11 +477,15 @@ class SpottitGame {
   }
 
   public hideLeaderboardBlock() {
-    this.currPage = Pages.Picture;
+    //this.currPage = Pages.Picture;
+    //this.currPage = Pages.ZoomView;
+    this.setHomepage();
   }
 
   public hideHelpBlock() {
-    this.currPage = Pages.Picture;
+    //this.currPage = Pages.Picture;
+    //this.currPage = Pages.ZoomView;
+    this.setHomepage();
   }
 
   public async startOrResumeGame(){
@@ -633,6 +646,7 @@ Devvit.addCustomPostType({
               <button size="small" icon='checkmark' onPress={() => game.showTheSpotAndAbort()}>Yes</button>
               <spacer size="medium" />
               <button size="small" icon='close' onPress={() => {
+                game.setHomepage();
                 const dBlocks:displayBlocks = game.UIdisplayBlocks;
                 dBlocks.confirmShowSpot = false;
                 game.UIdisplayBlocks = dBlocks;
@@ -900,18 +914,14 @@ Devvit.addCustomPostType({
             {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <>
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
-
-            {game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Started && !game.userIsAuthor ? <>
-            <spacer size="small" />
-            </>:""}
             
             {game.userGameStatus.state == gameStates.Started? <><button icon="show" size="small" onPress={() => {
+              game.currPage = Pages.Picture;
               const dBlocks:displayBlocks = game.UIdisplayBlocks;
               dBlocks.confirmShowSpot = true;
               game.UIdisplayBlocks = dBlocks;
             }}></button><spacer size="small" />
-            <button icon={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "search-fill" :  "search" } size="small" onPress={() => game.toggleZoomSelect()} appearance={ (game.UIdisplayBlocks.zoomView || game.UIdisplayBlocks.zoomSelect ) ? "success" :  "secondary" } ></button>
-            <spacer size="small" />
+            
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
             </>: ""}
             
