@@ -392,6 +392,11 @@ class SpottitGame {
     await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
     await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
     this.userGameStatus = ugs;
+
+    const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
+    dBlocks.zoomView = false;
+    dBlocks.picture = true;
+    this.UIdisplayBlocks = dBlocks;
   }
 
   public async incrementAttempts() {
@@ -452,28 +457,6 @@ class SpottitGame {
     }
 
     this.UIdisplayBlocks = dBlocks;
-
-/*
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    if( dBlocks.zoomView ){ //If already in zoom view, reset zoom and go back to full picture view
-      dBlocks.spotTiles = true;
-      dBlocks.zoomSelect = false;
-      dBlocks.zoomView = false;
-    }
-    else if( dBlocks.zoomSelect ) {
-      dBlocks.zoomSelect = false;
-      dBlocks.spotTiles = true;
-    }
-    else {
-      dBlocks.zoomSelect = true;
-      dBlocks.spotTiles = false;
-      this._context.ui.showToast({
-        text: "Please select a block to zoom into.",
-        appearance: 'neutral',
-      });
-    }
-    this.UIdisplayBlocks = dBlocks;
-  */
   }
 
   public showHelpBlock() {
@@ -503,15 +486,13 @@ class SpottitGame {
     }
     ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
     this.userGameStatus = ugs;
-    dBlocks.spots = false;
-    dBlocks.spotTiles = true;
-    this.UIdisplayBlocks = dBlocks;
+
     this._counterInterval.start();
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'false', {expiration: expireTime});
-    
-    this._context.ui.showToast({text: `Click on 🔎 to enable zoom, or open full image using (↗) button`,
-      appearance: 'neutral'});
-    
+
+    this.currPage = Pages.ZoomView;
+    dBlocks.zoomView = true;
+    this.UIdisplayBlocks = dBlocks;
   }
 
   public showZoomView(alignment:Devvit.Blocks.Alignment){
