@@ -1,3 +1,25 @@
+function detectDoubleTap(doubleTapMs) {
+  let timeout, lastTap = 0
+  return function detectDoubleTap(event) {
+    const currentTime = new Date().getTime()
+    const tapLength = currentTime - lastTap
+    if (0 < tapLength && tapLength < doubleTapMs) {
+      event.preventDefault()
+      const doubleTap = new CustomEvent("doubletap", {
+        bubbles: true,
+        detail: event
+      })
+      event.target.dispatchEvent(doubleTap)
+    } else {
+      timeout = setTimeout(() => clearTimeout(timeout), doubleTapMs)
+    }
+    lastTap = currentTime
+  }
+}
+
+// initialize the new event
+document.addEventListener('pointerup', detectDoubleTap(500));
+
 
 const zoomistImageContainer = document.getElementById("zoomist-image");
 
@@ -11,6 +33,10 @@ function loadImage() {
 
 loadImage();
 var imageAdded = false;
+var dragged = false;
+var zoomed = false;
+var startX = 0;
+var startY = 0;
 
 window.onmessage = (ev) => {
 
@@ -32,6 +58,30 @@ window.onmessage = (ev) => {
         zoomer: true,
         zoomRatio: 0.08
       });
+
+      zoomist.on('dragEnd', (zoomist, transform, event) => {
+        var endX = transform.x;
+        var endY = transform.y;
+
+        if( (startX !== endX ) ||  (startY !== endY) ) {
+          dragged = true;
+        }
+        else {
+          dragged = false;
+        }
+      });
+
+      zoomist.on('dragStart', (zoomist, transform, event) => {
+        startX = transform.x;
+        startY = transform.y;
+      });
+
+      zoomist.on('zoom', (zoomist, scale) => {
+        zoomed = true;
+        setTimeout(function() { zoomed = false;}, 700);//set it to false after possible double-click time has passed.
+      });
+
+      
       imageAdded = true;
       appendOverlay(tilesData);
   }
@@ -56,10 +106,16 @@ function appendOverlay(tilesData) {
       t.style.top = y * 13.555 + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
       t.style.left = x * tilesData.sizex + 'px';
       if ( tile == 1 ) {
-        t.addEventListener("click", sendSuccessfulSpotting);
+        //t.addEventListener("click", sendSuccessfulSpotting);
+        //t.addEventListener("touchend", sendSuccessfulSpotting); 
+        t.addEventListener("doubletap", sendSuccessfulSpotting); 
+        
       } 
       else {
-        t.addEventListener("click", sendFailedSpotting);
+       // t.addEventListener("click", sendFailedSpotting);
+        //t.addEventListener("touchend", sendFailedSpotting);
+
+        t.addEventListener("doubletap", sendFailedSpotting);
       }
       tc.appendChild(t);
     }
@@ -70,15 +126,20 @@ function appendOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting() {
-  console.log("You successfully spotted it!");
-  window.parent.postMessage({
-    type: 'succcessfulSpotting'
-    }, '*');
+
+  if( !zoomed ) {
+    window.parent.postMessage({
+      type: 'succcessfulSpotting'
+      }, '*');
+  }
+  zoomed = false;
 }
 
 function sendFailedSpotting() {
-  console.log("that's not the right spot :(");
-  window.parent.postMessage({
-    type: 'unsucccessfulSpotting'
-    }, '*');
+  if( !zoomed ) {
+    window.parent.postMessage({
+      type: 'unsucccessfulSpotting'
+      }, '*');
+  }
+  zoomed = false;
 }
