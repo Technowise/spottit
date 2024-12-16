@@ -20,7 +20,6 @@ function detectDoubleTap(doubleTapMs) {
 // initialize the new event
 document.addEventListener('pointerup', detectDoubleTap(500));
 
-
 const zoomistImageContainer = document.getElementById("zoomist-image");
 
 function loadImage() {
@@ -33,10 +32,7 @@ function loadImage() {
 
 loadImage();
 var imageAdded = false;
-var dragged = false;
 var zoomed = false;
-var startX = 0;
-var startY = 0;
 
 window.onmessage = (ev) => {
 
@@ -59,29 +55,11 @@ window.onmessage = (ev) => {
         zoomRatio: 0.08
       });
 
-      zoomist.on('dragEnd', (zoomist, transform, event) => {
-        var endX = transform.x;
-        var endY = transform.y;
-
-        if( (startX !== endX ) ||  (startY !== endY) ) {
-          dragged = true;
-        }
-        else {
-          dragged = false;
-        }
-      });
-
-      zoomist.on('dragStart', (zoomist, transform, event) => {
-        startX = transform.x;
-        startY = transform.y;
-      });
-
       zoomist.on('zoom', (zoomist, scale) => {
         zoomed = true;
-        setTimeout(function() { zoomed = false;}, 700);//set it to false after possible double-click time has passed.
+        setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
       });
 
-      
       imageAdded = true;
       appendOverlay(tilesData);
   }
@@ -106,16 +84,10 @@ function appendOverlay(tilesData) {
       t.style.top = y * 13.555 + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
       t.style.left = x * tilesData.sizex + 'px';
       if ( tile == 1 ) {
-        //t.addEventListener("click", sendSuccessfulSpotting);
-        //t.addEventListener("touchend", sendSuccessfulSpotting); 
-        t.addEventListener("doubletap", sendSuccessfulSpotting); 
-        
+        t.addEventListener("doubletap", sendSuccessfulSpotting);//TODO: Show indication of the spot selected in UI.
       } 
       else {
-       // t.addEventListener("click", sendFailedSpotting);
-        //t.addEventListener("touchend", sendFailedSpotting);
-
-        t.addEventListener("doubletap", sendFailedSpotting);
+        t.addEventListener("doubletap", sendFailedSpotting);//TODO: Show indication of the spot selected in UI.
       }
       tc.appendChild(t);
     }

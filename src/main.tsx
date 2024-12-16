@@ -61,7 +61,6 @@ type webviewDataRequest = {
   type: string;
 };
 
-
 class SpottitGame {
   private _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
@@ -226,10 +225,6 @@ class SpottitGame {
       }
     );
 
-    
-
-
-  
   }
 
   get userIsAuthor() {
@@ -397,6 +392,7 @@ class SpottitGame {
     dBlocks.zoomView = false;
     dBlocks.picture = true;
     this.UIdisplayBlocks = dBlocks;
+    this.setHomepage();
   }
 
   public async incrementAttempts() {
@@ -460,7 +456,7 @@ class SpottitGame {
   }
 
   public setHomepage() {
-    if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished ) {
+    if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished || this.userGameStatus.state == gameStates.Paused || this.userGameStatus.state == gameStates.NotStarted) {
       this.currPage = Pages.Picture;
     }
     else if( this.userGameStatus.state == gameStates.Started) {
@@ -477,14 +473,10 @@ class SpottitGame {
   }
 
   public hideLeaderboardBlock() {
-    //this.currPage = Pages.Picture;
-    //this.currPage = Pages.ZoomView;
     this.setHomepage();
   }
 
   public hideHelpBlock() {
-    //this.currPage = Pages.Picture;
-    //this.currPage = Pages.ZoomView;
     this.setHomepage();
   }
 
@@ -829,7 +821,6 @@ Devvit.addCustomPostType({
       return null;
     }
 
-
     const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
     <webview id="ZoomistWebview" width="100%" height="100%" url="zoom-view.html"  onMessage={ async (msg) => {
       const wr = msg as webviewDataRequest;
@@ -910,7 +901,7 @@ Devvit.addCustomPostType({
             {cp[game.currPage]}
           </hstack>
           <hstack alignment="middle center" width="100%" height="10%">
-            <button icon="help" size="small" onPress={() => game.showHelpBlock()}></button><spacer size="small" />
+            <button icon="help" size="small" onPress={() => game.showHelpBlock()}>Help</button><spacer size="small" />
             {game.userGameStatus.state != gameStates.Started && game.validTileSpotsMarkingDone ? <>
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
@@ -1042,7 +1033,6 @@ Devvit.addMenuItem({
 });
 
 async function showCreatePostForm(context:ContextAPIClients) {
-
   const subreddit = await context.reddit.getCurrentSubreddit();
   const flairTemplates = await subreddit.getPostFlairTemplates();
   const options = flairTemplates.map(template => {
