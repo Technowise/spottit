@@ -35,6 +35,29 @@ body {
     position:relative;
     height: 100%;
     width: 100%;
+    /*
     background-color: green;
     opacity: 0.5;
+    */
   }
+
+  .tiles-container .tile {
+    position: absolute;
+    width: 15.59px;
+    /*
+    height: 16px;
+    */
+    height: 13.55px;
+
+    /* background-color: blue; */
+    opacity: 0.5;
+  }
+ /*
+  .row0 {
+    top: 0;
+  }
+
+  .column0 {
+    left: 0;
+  }
+  */

@@ -559,36 +559,6 @@ Devvit.addCustomPostType({
       }
       return result;
     }
-
-    function getQuadrant<T>(quadrantNumber: number, array: T[],segmentLength: number) {
-      const q1: T[][] = [];
-      const q2: T[][] = [];
-      const q3: T[][] = [];
-      const q4: T[][] = [];
-  
-      for (let i = 0; i < array.length/2; i += segmentLength) {
-          q1.push(array.slice(i, i + (segmentLength/2) ));
-          q2.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
-      }
-
-      if( quadrantNumber == 1 ) {
-        return q1;
-      }
-      else if( quadrantNumber == 2 ) {
-        return q2;
-      }
-
-      for (let i = array.length/2; i < array.length; i += segmentLength) {
-          q3.push(array.slice(i, i + (segmentLength/2) ));
-          q4.push(array.slice(i + (segmentLength/2), i + (segmentLength) ));
-      }
-  
-      if( quadrantNumber == 3 ) {
-          return q3;
-      }
-      
-      return q4;
-  }    
     
     const LeaderBoardBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">

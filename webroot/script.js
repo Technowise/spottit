@@ -41,26 +41,62 @@ window.onmessage = (ev) => {
         zoomRatio: 0.08
       });
       imageAdded = true;
+      appendOverlay(tilesData);
   }
 
+}
 
-  if (true ) {
 
-    const div = document.createElement("div");
-    div.className = "overlay"
+function appendOverlay(tilesData) {
 
-    /*
-    div.addEventListener("click", myFunction);
+  const div = document.createElement("div");
+  div.className = "overlay"
 
-    function myFunction() {
-      //console.log("clicked on the red...")
-    } 
-    */
+  /*
+  div.addEventListener("click", myFunction);
 
-    const tc = document.createElement("div");
-    tc.className = "tiles-container";
-    div.appendChild(tc);
-    zoomistImageContainer.appendChild(div);
+  function myFunction() {
+    //console.log("clicked on the red...")
+  } 
+  */
+
+  const tc = document.createElement("div");
+  tc.className = "tiles-container";
+
+  //Add tiles into tiles container:
+  var tileCount = 0;
+
+  for(var y=0; y < tilesData.resolutiony; y ++ ) {
+    
+    for(var x=0; x < tilesData.resolutionx; x ++ ) {
+      console.log("Column: "+x);
+      var elementIndex = y * tilesData.resolutionx + x;
+      var tile = tilesData.data[ elementIndex ];
+
+      const t = document.createElement("div");
+      t.className = "tile row"+y+" col"+x+" "+elementIndex;
+      
+      //t.style.top = y * tilesData.sizey + 'px';
+      t.style.top = y * 13.55 + 'px';
+      
+      t.style.left = x * tilesData.sizex + 'px';
+      
+      if ( tile == 1 ) {
+        t.style.backgroundColor = "red";
+        tileCount++;
+      }
+      else {
+        t.style.backgroundColor = "blue";
+      }
+      tc.appendChild(t);
+    }
+    console.log("row break "+ y);
+
   }
+
+  console.log("Total on tiles: "+ tileCount);
+
+  div.appendChild(tc);
+  zoomistImageContainer.appendChild(div);
 
 }
