@@ -552,8 +552,8 @@ Devvit.addCustomPostType({
     const LeaderBoardBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" backgroundColor="transparent" alignment="center middle">
         <vstack  width="96%" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
-          <hstack padding="small">
-            <text style="heading" size="large" weight='bold' alignment="middle center" width="100%" color='black'>
+          <hstack padding="small"  width="100%">
+            <text style="heading" size="large" weight='bold' alignment="middle center" width="100%"  color='black'>
                 Leaderboard
             </text>
           </hstack>
