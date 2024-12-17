@@ -8,12 +8,12 @@ The app adds ability to create picture posts where post creator can mark specifi
 The game is built using the Devvit platform(which includes CLI, AskAI tool, Play etc) and VS Code as the primary editor for building. The app primarily makes us of Blocks, and makes use multiple capabilities of Devvit platform - namely: Redis, Forms, Triggers, Webviews and Menu Actions. 
 
 ## Challenges we ran into
-1. Implementing a zoom feature.
+#### 1. Implementing a zoom feature.
 We initially tried to make this game using just the blocks layout system of Devvit platform, but we ran into a number of challenges in implementing a zoom feature with that ( as it does not yet have a built-in zoom feature). We tried to make a custom zoom functionality by setting the [image](https://developers.reddit.com/docs/blocks/image) height and width to 200%, and then using [alignment](https://developers.reddit.com/docs/blocks/stacks#alignment) attribute to show one of the four quadrants of the image. While doing so, we faced inconsistencies in behavior between different platforms (iOS/Android/web). We the issues to Devvit team, and they helped in sorting out the issues. Even after this, users wanted the usual pinch and zoom, which is much more flexible and it is something everyone is already familiar with. Since Devvit introduced webviews, we have now implemented the usual pinch and zoom feature using a Javascript library.
-2. App crashing.
+#### 2. App crashing.
 In initial versions of this devvit app, the reddit app itself was crashing while testing this app. It was reported to Devvit team, and crashing eventually stopped.
-3. Issue with flairs.
-The app was failing to create posts where flairs are required and had certain configuration for the flairs. I reported the issue with the Devvit team, and it was eventually sorted out by them. 
+#### 3. Issue with flairs.
+The app was failing to create posts where flairs are required and had certain configuration for the flairs. I reported the issue with the Devvit team, and it was eventually sorted out by them.
 
 ## Accomplishments that we're proud of
 1. The app got a number of installs in reddit communities including [/r/FindTheSniper](https://www.reddit.com/r/FindTheSniper/) which this app was inspired by.
@@ -26,7 +26,8 @@ It is a fulfilling experience building something new in a platform in it's early
 ## What's next for Spottit
 1. Make the process of creating a new post much simpler than how it is presently through use of webviews, and give ability mark the spot more accurately.
 2. Add ability to mark multiple spots, and add points based on number of spots found by the player.
-2. Make animation on the double-clicked spot to indicate the exact spot that the user clicked (UX improvement).
-3. Blur the image shown before starting the game so that there is lesser chance of cheating (through use of developer tools).
-4. Make the UI more responsive - to give best view based on the screen-size.
-5. Add support for webp image format when it becomes available in devvit (presently webp uploads are not supported).
+3. Add post archive feature - where older posts would still be fully viewable (except that no new entries would be made into leaderboard)
+4. Make animation on the double-clicked spot to indicate the exact spot that the user clicked (UX improvement).
+5. Blur the image shown before starting the game so that there is lesser chance of cheating (through use of developer tools).
+6. Make the UI more responsive - to give best view based on the screen-size.
+7. Add support for webp image format when it becomes available in devvit (presently webp uploads are not supported).

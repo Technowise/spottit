@@ -15,13 +15,13 @@ Moderators can install the app to their subreddit by going to [https://developer
 You can click on "Start!" button to start the game. This will show the picture, along with toolbar buttons to zoom into the picture. You can pinch-and-zoom, or pan to specific areas of the picture to find the spot. After you find the spot, double-click/double-tap on the spot to register. If you wish to view the solution/spot, you can click on the eye icon - this will hightlight the spot (solution) and abort the game.
 
 ## Features:
-* Zoom and pan tools
+#### Zoom and pan tools
 The app adds tool to zoom/pan the image as needed to search and find the respective spot.
 
-* Leaderbaord
+#### Leaderbaord
 Leaderboard contains the list of usernames ordered by number of words they have solved.
 
-* Help page
+#### Help page
 Help page describes details on how to play the game and the app's features.
 
 ## Changelog
