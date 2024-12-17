@@ -25,6 +25,7 @@ It is a fulfilling experience building something new in a platform in it's early
 
 ## What's next for Spottit
 1. Make the process of creating a new post much simpler than how it is presently through use of webviews, and give ability mark the spot more accurately.
+2. Add ability to mark multiple spots, and add points based on number of spots found by the player.
 2. Make animation on the double-clicked spot to indicate the exact spot that the user clicked (UX improvement).
 3. Blur the image shown before starting the game so that there is lesser chance of cheating (through use of developer tools).
 4. Make the UI more responsive - to give best view based on the screen-size.
