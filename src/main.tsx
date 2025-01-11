@@ -1,4 +1,4 @@
-import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient } from '@devvit/public-api';
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
 Devvit.configure({redditAPI: true, redis: true });
 
@@ -7,7 +7,8 @@ const resolutiony = 34;
 const sizex = 15.59;
 const sizey = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
-const redisExpireTimeSeconds = 2592000;//30 days in seconds.
+//const redisExpireTimeSeconds = 2592000;//30 days in seconds.
+const redisExpireTimeSeconds = 300;//5 mins in seconds. Temporary, remove this and uncomment above.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
@@ -61,6 +62,12 @@ type webviewDataRequest = {
   type: string;
 };
 
+type postArchive = {
+  image: string,
+  tilesData: string,
+  leaderboard: leaderBoard[]
+}
+
 class SpottitGame {
   private _counterInterval: UseIntervalResult;
   private readonly _ui: UIClient;
@@ -79,6 +86,7 @@ class SpottitGame {
   private _data: UseStateResult<number[]>;
   private _userIsAuthor: boolean;
   private _redisKeyPrefix: string;
+  private _isGameArchived: UseStateResult<boolean>;;
 
   constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
@@ -221,9 +229,29 @@ class SpottitGame {
         if (tilesDataStr && tilesDataStr.length > 0 ) {
           return tilesDataStr.split(",").map(Number);
         }
+        else {//Retrieve tiles data from archive comment.
+          const redditPostComments = await getRedditPostComments(context, postId);
+          for( var i=0; i<redditPostComments.length; i++ ) {
+            if( redditPostComments[i].authorName == 'spottit-game' && redditPostComments[i].body.includes("\"tilesData\"") ) {
+              try {
+                var pa = JSON.parse(redditPostComments[i].body);
+                const postArchive = pa as postArchive;
+                console.log("Retrieved tiles-data from comment json");
+                return postArchive.tilesData.split(",").map(Number);
+              } catch (e) {
+                console.log(e);
+                continue;//Skip current entry and try next.
+              }
+            }
+          }
+        }
         return tiles;//default to empty array.
       }
     );
+
+    this._isGameArchived = context.useState(async () => {
+      return await this.isGameArchived();
+    });
 
   }
 
@@ -245,6 +273,10 @@ class SpottitGame {
 
   get imageURL() {
     return this._imageURL[0];
+  }
+
+  get gameArchived() {
+    return this._isGameArchived[0];
   }
 
   public set UIdisplayBlocks(value: displayBlocks) {
@@ -314,6 +346,18 @@ class SpottitGame {
     return width == null ||  width < 688 ? false : true;
   }
 
+  private async isGameArchived() {
+    var expireTimestamp = await getPostExpireTimestamp(this._context, this.myPostId);
+    var dateNow = new Date();
+    var nowTimestamp = dateNow.getTime();
+    if( nowTimestamp > expireTimestamp ) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
   public async toggleValidTile( index=0 ) {
     var d = this.data;
     if( d[index] == 1 ) {
@@ -377,16 +421,19 @@ class SpottitGame {
       text: "You have successfully found the spot in "+this.userGameStatus.counter+" seconds, Congratulations!",
       appearance: 'success',
     });
-    const ugs = this.userGameStatus;    
-    ugs.state = gameStates.Finished;
-    const leaderBoardArray = this.leaderBoardRec;
-    const leaderBoardObj:leaderBoard  = { username:this.currentUsername, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
-    leaderBoardArray.push(leaderBoardObj);
-    leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-    this.leaderBoardRec = leaderBoardArray;
-    await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
-    await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
-    this.userGameStatus = ugs;
+
+    if( !this.gameArchived ) {
+      const ugs = this.userGameStatus;    
+      ugs.state = gameStates.Finished;
+      const leaderBoardArray = this.leaderBoardRec;
+      const leaderBoardObj:leaderBoard  = { username:this.currentUsername, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
+      leaderBoardArray.push(leaderBoardObj);
+      leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+      this.leaderBoardRec = leaderBoardArray;
+      await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
+      await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
+      this.userGameStatus = ugs;
+    }
 
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
@@ -525,6 +572,33 @@ Devvit.addTrigger({
     await redis.del(event.postId+'authorName');
     await redis.del(event.postId+'ValidTileSpotsMarkingDone');
     await redis.del(event.postId+'TilesDataArray');
+  },
+});
+
+
+Devvit.addSchedulerJob({
+  name: 'post_archive_job',  
+  onRun: async(event, context) => {
+    console.log("################Running the scheduled task for archive job...###########");
+    var myPostId = event.data!.postId as string;
+
+    const tilesDataStr = await context.redis.get(myPostId+'TilesDataArray');
+    const imageUrl = await context.redis.get(myPostId+'imageURL');
+    console.log("Tiles Data: ");
+    console.log(tilesDataStr);
+    console.log("ImageURL: ");
+    console.log(imageUrl);
+
+    if ( (tilesDataStr && tilesDataStr.length > 0 ) && (imageUrl && imageUrl.length > 0 ) ) {
+      var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: await getLeaderboardRecords(context, myPostId)};
+
+      var archiveCommentJson = JSON.stringify(pa);
+      const redditComment = await context.reddit.submitComment({
+            id: `${myPostId}`,
+            text: archiveCommentJson
+          });
+      console.log("Created post archive with comment-id:"+redditComment.id );
+    }
   },
 });
 
@@ -1018,6 +1092,9 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
+
+    await createPostArchiveSchedule(context, myPostId);
+    console.log("Redis expire time set to "+expireTime.toString());
   
     ui.showToast({
       text: `Successfully created a Spottit post! Please mark the spot that participants should find by going to your post.`,
@@ -1042,4 +1119,77 @@ async function showCreatePostForm(context:ContextAPIClients) {
   });
   
   context.ui.showForm(pictureInputForm, {flairOptions: options});
+}
+
+async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients, postId:string ) {
+  const post = await context.reddit.getPostById(postId);
+  return post.createdAt.getTime() + milliseconds;
+}
+
+async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClients, postId:string) {
+  var postExpireTimestamp = await getPostExpireTimestamp(context, postId);
+  //var postExpireTimestamp = postExpireTimestamp  - 43200000; //43200000 = 12 hours in milliseconds.
+  var postExpireTimestamp = postExpireTimestamp  - 60000;// 60000 = one minute in milliseconds.
+  try {
+
+    var postArchiveRuneAt = new Date(postExpireTimestamp);
+    console.log("Post archive job is being scheduled to run at: "+postArchiveRuneAt.toString() );
+
+    const jobId = await context.scheduler.runJob({
+      runAt: postArchiveRuneAt,
+      name: 'post_archive_job',
+      data: { 
+        postId: postId,
+      }
+    });
+    await context.redis.set(postId+'post_archive_job', jobId, {expiration: expireTime});
+    console.log("Created job schedule for post_archive_job: "+jobId);
+  } catch (e) {
+    console.log('error - was not able to create post_archive_job:', e);
+    throw e;
+  }
+}
+
+async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, postId:string ) {
+  const previousLeaderBoard = await context.redis.hGetAll(postId);
+  if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
+    var leaderBoardRecords: leaderBoard[] = [];
+    for (const key in previousLeaderBoard) {
+      const redisLBObj = JSON.parse(previousLeaderBoard[key]);
+      if( redisLBObj.username ) {
+        const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
+        leaderBoardRecords.push(lbObj);
+      }
+    }
+    leaderBoardRecords.sort((a, b) =>  a.timeInSeconds - b.timeInSeconds );
+    return leaderBoardRecords;
+  }
+  else {//try to get leaderbard records from the archive in comment.
+    const redditPostComments = await getRedditPostComments(context, postId);
+    for( var i=0; i<redditPostComments.length; i++ ) {
+      if( redditPostComments[i].authorName == 'spottit-game' && redditPostComments[i].body.includes("\"leaderboard\"") ) {
+        try {
+          var pa = JSON.parse(redditPostComments[i].body);
+          const postArchive = pa as postArchive;
+          console.log("Retrieved leaderboard records from comment json");
+          return postArchive.leaderboard;
+        } catch (e) {
+          console.log(e);
+          continue;//Skip current entry and try next.
+        }
+      }
+    }
+  }
+  return [];
+}
+
+async function getRedditPostComments(context: TriggerContext| ContextAPIClients, postId:string) {
+  const comments = await context.reddit
+  .getComments({
+    postId: postId,
+    limit: 100,
+    pageSize: 500,
+  })
+  .all();
+  return comments;
 }
