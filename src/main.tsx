@@ -165,15 +165,20 @@ class SpottitGame {
 
     this._validTileSpotsMarkingDone = context.useState(async () => {
       const ValidTileSpotsMarkingDone = await context.redis.get(this.myPostId+'ValidTileSpotsMarkingDone');
-      if( ValidTileSpotsMarkingDone &&  ValidTileSpotsMarkingDone == 'true') {
-        return true;
+      if( ValidTileSpotsMarkingDone) {
+        if(  ValidTileSpotsMarkingDone == 'true' ) {
+          return true;
+        } 
+        else {
+          return false;
+        }
       }
   
       if( this.userIsAuthor ) {
         this.currPage = Pages.MarkSpotsInfo;
       }
       
-      return false;
+      return true;
     });
 
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
@@ -191,6 +196,21 @@ class SpottitGame {
       return dBlocks;
     });
 
+    this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
+      var records = await getLeaderboardRecords(context, this.myPostId);
+      for(var i =0; i < records.length; i++ ) {
+        if(records[i].username == this.currentUsername) {
+          const usg = this._userGameStatus[0];
+          usg.state = gameStates.Finished;
+          usg.counter = records[i].timeInSeconds;
+          usg.attemptsCount = records[i].attempts;
+          this.userGameStatus = usg;
+        }
+      }
+      return records;
+    });
+
+    /*
     this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
       const previousLeaderBoard = await context.redis.hGetAll(this.myPostId);
       if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
@@ -214,6 +234,7 @@ class SpottitGame {
       } 
       return [];
     });
+    */
 
     this._imageURL = context.useState(async () => {
       const imageURL = await context.redis.get(this.myPostId+'imageURL');
@@ -237,6 +258,7 @@ class SpottitGame {
                 var pa = JSON.parse(redditPostComments[i].body);
                 const postArchive = pa as postArchive;
                 console.log("Retrieved tiles-data from comment json");
+                this.imageURL = postArchive.image;
                 return postArchive.tilesData.split(",").map(Number);
               } catch (e) {
                 console.log(e);
@@ -307,6 +329,11 @@ class SpottitGame {
   private set data(value: number[]) {
     this._data[0] = value;
     this._data[1](value);
+  }
+
+  private set imageURL(value: string) {
+    this._imageURL[0] = value;
+    this._imageURL[1](value);
   }
 
   public set counterInterval(value: UseIntervalResult ) {
