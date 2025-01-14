@@ -7,8 +7,8 @@ const resolutiony = 34;
 const sizex = 15.59;
 const sizey = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
-//const redisExpireTimeSeconds = 2592000;//30 days in seconds.
-const redisExpireTimeSeconds = 300;//5 mins in seconds. Temporary, remove this and uncomment above.
+const redisExpireTimeSeconds = 2592000;//30 days in seconds.
+//const redisExpireTimeSeconds = 300;//5 mins in seconds. Temporary, remove this and uncomment above.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
@@ -1155,8 +1155,8 @@ async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients,
 
 async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClients, postId:string) {
   var postExpireTimestamp = await getPostExpireTimestamp(context, postId);
-  //var postExpireTimestamp = postExpireTimestamp  - 43200000; //43200000 = 12 hours in milliseconds.
-  var postExpireTimestamp = postExpireTimestamp  - 60000;// 60000 = one minute in milliseconds.
+  var postExpireTimestamp = postExpireTimestamp  - 3600000; //3600000 = 1 hour in milliseconds.
+  //var postExpireTimestamp = postExpireTimestamp  - 60000;// 60000 = one minute in milliseconds - temporary value for testing.
   try {
 
     var postArchiveRuneAt = new Date(postExpireTimestamp);
