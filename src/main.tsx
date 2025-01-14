@@ -113,7 +113,8 @@ class SpottitGame {
     });
 
     this._currPage = context.useState(async () => {
-      return Pages.Picture;
+      //return Pages.Picture;
+      return Pages.ZoomView;
     });
   
     this._currentUsername = context.useState(async () => {
@@ -516,12 +517,15 @@ class SpottitGame {
   }
 
   public setHomepage() {
+    /*
     if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished || this.userGameStatus.state == gameStates.Paused || this.userGameStatus.state == gameStates.NotStarted) {
       this.currPage = Pages.Picture;
     }
     else if( this.userGameStatus.state == gameStates.Started) {
       this.currPage = Pages.ZoomView;
     }
+    */
+    this.currPage = Pages.ZoomView;
   }
 
   public showHelpBlock() {

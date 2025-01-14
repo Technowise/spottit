@@ -22,6 +22,9 @@ document.addEventListener('pointerup', detectDoubleTap(500));
 
 const zoomistImageContainer = document.getElementById("zoomist-image");
 
+const zoomistContainer = document.getElementById("zoomist-image");
+
+
 function loadImage() {
    if ( zoomistImageContainer.childElementCount == 0 ){
         window.parent.postMessage({
@@ -41,10 +44,13 @@ window.onmessage = (ev) => {
   if (type  == "image" && !imageAdded ) {
       var url = ev.data.data.message.url;
       var tilesData =  ev.data.data.message.tilesData;
+
+/*
       console.log("Got a new image...");
       const image = document.createElement("img");
       image.src = url;
       image.id = "spottitImage";
+
       zoomistImageContainer.appendChild(image);
 
       const zoomist = new Zoomist('.zoomist-container', {
@@ -59,10 +65,23 @@ window.onmessage = (ev) => {
         zoomed = true;
         setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
       });
-
+*/
       imageAdded = true;
-      appendOverlay(tilesData);
+      appendStartResumeOverlay( url );
+      //TODO: add tilesData overlay only after clicking on start/resume button.
+      //appendOverlay(tilesData);
   }
+}
+
+function appendStartResumeOverlay(url) {
+  const div = document.createElement("div");
+  div.className = "startOrResumeOverlay"
+  const image = document.createElement("img");
+  image.src = url;
+  image.id = "spottitPreviewImage";
+  div.appendChild(image);
+  //TODO: Add start/resume button inside the div.
+  document.body.appendChild(div);
 }
 
 function appendOverlay(tilesData) {

@@ -15,14 +15,8 @@ body {
     width: 100%;
     background-color: yellow;
     text-align:center;
+    display:none; /*Temporarily setting this so that we can finish the start/resume screen */
   }
-/*
-  .zoomist-container img {
-    height: 460.8px;
-    width: 100%;
-    object-fit: contain;
-  }
-*/
 
   .zoomist-container img {
     height: 460.8px;
@@ -51,4 +45,16 @@ body {
     width: 15.59px;
     height: 13.555px;
     opacity: 0.5;
+  }
+
+  div.startOrResumeOverlay {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    visibility: visible;
+    text-align:center;
+  }
+
+  div.startOrResumeOverlay img{
+    max-height: 100%;
   }
