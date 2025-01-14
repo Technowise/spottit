@@ -515,20 +515,6 @@ class SpottitGame {
     this.UIdisplayBlocks = dBlocks;
   }
 
-  public toggleZoomSelect() {
-
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    if( ! dBlocks.zoomView ) {
-      this.currPage = Pages.ZoomView;
-      dBlocks.zoomView = true;
-    } else {
-      this.currPage = Pages.Picture;
-      dBlocks.zoomView = false;
-    }
-
-    this.UIdisplayBlocks = dBlocks;
-  }
-
   public setHomepage() {
     if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished || this.userGameStatus.state == gameStates.Paused || this.userGameStatus.state == gameStates.NotStarted) {
       this.currPage = Pages.Picture;
