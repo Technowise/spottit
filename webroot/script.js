@@ -21,9 +21,9 @@ function detectDoubleTap(doubleTapMs) {
 document.addEventListener('pointerup', detectDoubleTap(500));
 
 const zoomistImageContainer = document.getElementById("zoomist-image");
-
-const zoomistContainer = document.getElementById("zoomist-image");
-
+const zoomistContainer = document.getElementById("zoomist-container");
+var tilesData = null;//TODO: use class and avoid using global vars later.
+var imageUrl = null;
 
 function loadImage() {
    if ( zoomistImageContainer.childElementCount == 0 ){
@@ -42,9 +42,8 @@ window.onmessage = (ev) => {
   var type = ev.data.data.message.type;
   
   if (type  == "image" && !imageAdded ) {
-      var url = ev.data.data.message.url;
-      var tilesData =  ev.data.data.message.tilesData;
-
+      imageUrl = ev.data.data.message.url;
+      tilesData =  ev.data.data.message.tilesData;
 /*
       console.log("Got a new image...");
       const image = document.createElement("img");
@@ -67,26 +66,57 @@ window.onmessage = (ev) => {
       });
 */
       imageAdded = true;
-      appendStartResumeOverlay( url );
+      appendStartResumeOverlay();
       //TODO: add tilesData overlay only after clicking on start/resume button.
       //appendOverlay(tilesData);
   }
 }
 
-function appendStartResumeOverlay(url) {
+function appendStartResumeOverlay() {
   const div = document.createElement("div");
   div.className = "startOrResumeOverlay"
+  div.id = "startOrResumeOverlay"
   const image = document.createElement("img");
-  image.src = url;
+  image.src = imageUrl;
   image.id = "spottitPreviewImage";
 
   const button = document.createElement("button");
   button.id = "startResumeButton";
   button.innerHTML = "Start";
+  button.addEventListener("click", function() {
+    console.log("You clicked on start!");
+    var div = document.getElementById('startOrResumeOverlay');
+    div.style.display = "none";
+    zoomistContainer.style.display = "block";
+
+    const image = document.createElement("img");
+    image.height = "100%";
+    image.width = "100%";
+    image.src = imageUrl;
+    image.id = "spottitImage";
+    zoomistImageContainer.appendChild(image);
+
+    const zoomist = new Zoomist('.zoomist-container', {
+      bounds: false,
+      initScale: 1,
+      slider: true, 
+      zoomer: true,
+      zoomRatio: 0.08
+    });
+/*
+
+    zoomist.on('zoom', (zoomist, scale) => {
+      zoomed = true;
+      setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
+    });
+    */
+
+    appendOverlay(tilesData);
+  }, false);
 
   div.appendChild(image);
   div.appendChild(button);
-  
+
   //TODO: Add start/resume button inside the div.
   document.body.appendChild(div);
 }
