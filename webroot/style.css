@@ -58,3 +58,25 @@ body {
   div.startOrResumeOverlay img{
     max-height: 100%;
   }
+
+  #startResumeButton {
+    background-color: green;
+    border: none;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 12px;
+    position:absolute;
+    left: 50%;
+    top: 50%;
+    /* transform: translateX(-50%); */
+    transform: translate(-50%, -50%);
+  }
+
+  #startResumeButton:hover {
+    background-color: #294a2f;
+  }

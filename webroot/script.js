@@ -79,7 +79,14 @@ function appendStartResumeOverlay(url) {
   const image = document.createElement("img");
   image.src = url;
   image.id = "spottitPreviewImage";
+
+  const button = document.createElement("button");
+  button.id = "startResumeButton";
+  button.innerHTML = "Start";
+
   div.appendChild(image);
+  div.appendChild(button);
+  
   //TODO: Add start/resume button inside the div.
   document.body.appendChild(div);
 }
