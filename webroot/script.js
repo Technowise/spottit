@@ -112,6 +112,11 @@ function appendStartResumeOverlay() {
     */
 
     appendOverlay(tilesData);
+
+    window.parent.postMessage({
+      type: 'startOrResumeGame'
+    }, '*');
+
   }, false);
 
   div.appendChild(image);

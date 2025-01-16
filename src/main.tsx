@@ -935,6 +935,9 @@ Devvit.addCustomPostType({
       else if(wr.type == "unsucccessfulSpotting") {
         await game.incrementAttempts();
       }
+      else if(wr.type == "startOrResumeGame") {
+        await game.startOrResumeGame();
+      }
     }}/>
     </vstack>);
 
