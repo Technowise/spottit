@@ -24,6 +24,7 @@ const zoomistImageContainer = document.getElementById("zoomist-image");
 const zoomistContainer = document.getElementById("zoomist-container");
 var tilesData = null;//TODO: use class and avoid using global vars later.
 var imageUrl = null;
+var ugs = null;
 
 function loadImage() {
    if ( zoomistImageContainer.childElementCount == 0 ){
@@ -37,13 +38,24 @@ loadImage();
 var imageAdded = false;
 var zoomed = false;
 
+const gameStates = Object.freeze( {
+  NotStarted: 0,
+  Started: 1,
+  Finished: 2,
+  Aborted: 3, 
+  Paused: 4
+});
+
 window.onmessage = (ev) => {
 
   var type = ev.data.data.message.type;
   
   if (type  == "image" && !imageAdded ) {
+      console.log("yeh lo, got this message:");
+      console.log(ev.data.data.message);
       imageUrl = ev.data.data.message.url;
       tilesData =  ev.data.data.message.tilesData;
+      ugs = ev.data.data.message.ugs;
 /*
       console.log("Got a new image...");
       const image = document.createElement("img");
@@ -74,15 +86,28 @@ window.onmessage = (ev) => {
 
 function appendStartResumeOverlay() {
   const div = document.createElement("div");
-  div.className = "startOrResumeOverlay"
-  div.id = "startOrResumeOverlay"
-  const image = document.createElement("img");
-  image.src = imageUrl;
-  image.id = "spottitPreviewImage";
+  div.className = "startOrResumeOverlay";
+  div.id = "startOrResumeOverlay";  
+  div.style.backgroundImage = "url('"+imageUrl+"')";
+  div.style.backgroundPosition = "center";
+  div.style.backgroundRepeat = "no-repeat";
+  div.style.backgroundSize =  "contain";
+  div.style.filter = "blur(1px)";
 
   const button = document.createElement("button");
   button.id = "startResumeButton";
-  button.innerHTML = "Start";
+
+  if( ugs.state == gameStates.Paused ) {
+    button.innerHTML = "Resume";
+  }
+  else if(ugs.state == gameStates.NotStarted ) {
+    button.innerHTML = "Start";
+  }
+  else if (ugs.state == gameStates.Finished) {
+    button.innerHTML = "You have finished this game.";
+  }
+  //TODO: handle other states.
+  
   button.addEventListener("click", function() {
     console.log("You clicked on start!");
     var div = document.getElementById('startOrResumeOverlay');
@@ -103,13 +128,13 @@ function appendStartResumeOverlay() {
       zoomer: true,
       zoomRatio: 0.08
     });
-/*
+
 
     zoomist.on('zoom', (zoomist, scale) => {
       zoomed = true;
       setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
     });
-    */
+    
 
     appendOverlay(tilesData);
 
@@ -119,7 +144,8 @@ function appendStartResumeOverlay() {
 
   }, false);
 
-  div.appendChild(image);
+  //div.appendChild(image);
+  //div.appendChild(svgImage);
   div.appendChild(button);
 
   //TODO: Add start/resume button inside the div.

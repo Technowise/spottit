@@ -211,32 +211,6 @@ class SpottitGame {
       return records;
     });
 
-    /*
-    this._leaderBoardRec = context.useState(async () => {//Get Leaderboard records.
-      const previousLeaderBoard = await context.redis.hGetAll(this.myPostId);
-      if (previousLeaderBoard && Object.keys(previousLeaderBoard).length > 0) {
-        var leaderBoardRecords: leaderBoard[] = [];
-        for (const key in previousLeaderBoard) {
-          const redisLBObj = JSON.parse(previousLeaderBoard[key]);
-          if( redisLBObj.username ) {
-            if(redisLBObj.username == this.currentUsername) {
-              const usg = this._userGameStatus[0];
-              usg.state = gameStates.Finished;
-              usg.counter = redisLBObj.timeInSeconds;
-              usg.attemptsCount = redisLBObj.attempts;
-              this.userGameStatus = usg;
-            }
-            const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
-            leaderBoardRecords.push(lbObj);
-          }
-        }
-        leaderBoardRecords.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-        return leaderBoardRecords;
-      } 
-      return [];
-    });
-    */
-
     this._imageURL = context.useState(async () => {
       const imageURL = await context.redis.get(this.myPostId+'imageURL');
       if (imageURL) {
@@ -927,7 +901,7 @@ Devvit.addCustomPostType({
       };
 
       if( wr.type == "requestImage") {//Load image
-        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL, tilesData: tilesData });
+        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL, tilesData: tilesData, ugs: game.userGameStatus });
       }
       else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
         await game.finishGame();
