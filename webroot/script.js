@@ -86,16 +86,31 @@ window.onmessage = (ev) => {
 
 function appendStartResumeOverlay() {
   const div = document.createElement("div");
-  div.className = "startOrResumeOverlay";
-  div.id = "startOrResumeOverlay";  
+  div.className = "startOrResumeOverlayBG";
+  div.id = "startOrResumeOverlayBG";
+  /*
   div.style.backgroundImage = "url('"+imageUrl+"')";
   div.style.backgroundPosition = "center";
   div.style.backgroundRepeat = "no-repeat";
   div.style.backgroundSize =  "contain";
   div.style.filter = "blur(1px)";
+  */
 
   const button = document.createElement("button");
   button.id = "startResumeButton";
+
+
+  const divStartResume = document.createElement("div");
+  divStartResume.className = "startOrResumeOverlay";
+  divStartResume.id = "startOrResumeOverlay";
+
+
+  divStartResume.style.backgroundImage = "url('"+imageUrl+"')";
+  divStartResume.style.backgroundPosition = "center";
+  divStartResume.style.backgroundRepeat = "no-repeat";
+  divStartResume.style.backgroundSize =  "contain";
+  divStartResume.style.filter = "blur(1px)";
+
 
   if( ugs.state == gameStates.Paused ) {
     button.innerHTML = "Resume";
@@ -110,7 +125,7 @@ function appendStartResumeOverlay() {
   
   button.addEventListener("click", function() {
     console.log("You clicked on start!");
-    var div = document.getElementById('startOrResumeOverlay');
+    var div = document.getElementById('startOrResumeOverlayBG');
     div.style.display = "none";
     zoomistContainer.style.display = "block";
 
@@ -144,9 +159,10 @@ function appendStartResumeOverlay() {
 
   }, false);
 
-  //div.appendChild(image);
-  //div.appendChild(svgImage);
+  //divStartResume.appendChild(button);
+  div.appendChild(divStartResume);
   div.appendChild(button);
+  
 
   //TODO: Add start/resume button inside the div.
   document.body.appendChild(div);

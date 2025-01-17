@@ -47,7 +47,7 @@ body {
     opacity: 0.5;
   }
 
-  div.startOrResumeOverlay {
+  div.startOrResumeOverlayBG {
     height: 100%;
     width: 100%;
     position: relative;
@@ -55,8 +55,17 @@ body {
     display:block;
   }
 
-  div.startOrResumeOverlay img{
-    max-height: 100%;
+  div.startOrResumeOverlay {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    text-align:center;
+    display:block;
+    /*
+    background-color: rgb(28, 29, 28);
+    opacity: 0.2;
+    */
+    z-index: 1;
   }
 
   #startResumeButton {
@@ -75,6 +84,8 @@ body {
     top: 50%;
     /* transform: translateX(-50%); */
     transform: translate(-50%, -50%);
+    z-index: 5;
+    opacity: 1;
   }
 
   #startResumeButton:hover {
