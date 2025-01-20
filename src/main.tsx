@@ -753,7 +753,7 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others. </text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others.</text>
         <spacer size="medium"/>
       </vstack>
     );

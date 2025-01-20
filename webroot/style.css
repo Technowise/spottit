@@ -91,3 +91,22 @@ body {
   #startResumeButton:hover {
     background-color: #294a2f;
   }
+
+  #messageOverlay {
+    background-color: rgba(0, 0, 0, 0.55);
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 12px;
+    position:absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    opacity: 1;
+    padding: 20px;
+  }

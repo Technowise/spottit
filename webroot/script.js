@@ -88,18 +88,8 @@ function appendStartResumeOverlay() {
   const div = document.createElement("div");
   div.className = "startOrResumeOverlayBG";
   div.id = "startOrResumeOverlayBG";
-  /*
-  div.style.backgroundImage = "url('"+imageUrl+"')";
-  div.style.backgroundPosition = "center";
-  div.style.backgroundRepeat = "no-repeat";
-  div.style.backgroundSize =  "contain";
-  div.style.filter = "blur(1px)";
-  */
-
   const button = document.createElement("button");
   button.id = "startResumeButton";
-
-
   const divStartResume = document.createElement("div");
   divStartResume.className = "startOrResumeOverlay";
   divStartResume.id = "startOrResumeOverlay";
@@ -111,15 +101,19 @@ function appendStartResumeOverlay() {
   divStartResume.style.backgroundSize =  "contain";
   divStartResume.style.filter = "blur(1px)";
 
-
   if( ugs.state == gameStates.Paused ) {
     button.innerHTML = "Resume";
+    div.appendChild(button);
   }
   else if(ugs.state == gameStates.NotStarted ) {
     button.innerHTML = "Start";
+    div.appendChild(button);
   }
   else if (ugs.state == gameStates.Finished) {
-    button.innerHTML = "You have finished this game.";
+    const messageOverlayDiv = document.createElement("div");
+    messageOverlayDiv.id = "messageOverlay";
+    messageOverlayDiv.innerHTML = "You have found the spot in "+ugs.counter+" seconds! Click on Leaderboard button to see time of others.";
+    div.appendChild(messageOverlayDiv);
   }
   //TODO: handle other states.
   
@@ -144,12 +138,10 @@ function appendStartResumeOverlay() {
       zoomRatio: 0.08
     });
 
-
     zoomist.on('zoom', (zoomist, scale) => {
       zoomed = true;
       setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
     });
-    
 
     appendOverlay(tilesData);
 
@@ -161,8 +153,6 @@ function appendStartResumeOverlay() {
 
   //divStartResume.appendChild(button);
   div.appendChild(divStartResume);
-  div.appendChild(button);
-  
 
   //TODO: Add start/resume button inside the div.
   document.body.appendChild(div);
