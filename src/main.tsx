@@ -112,11 +112,6 @@ class SpottitGame {
       return postId;
     });
 
-    this._currPage = context.useState(async () => {
-      //return Pages.Picture;
-      return Pages.ZoomView;
-    });
-  
     this._currentUsername = context.useState(async () => {
       const currentUser = await context.reddit.getCurrentUser();
       return currentUser?.username??'defaultUsername';
@@ -133,6 +128,8 @@ class SpottitGame {
     });
 
     this._userIsAuthor = this.currentUsername == this.authorName;
+    console.log("Current username:"+ this.currentUsername);
+    console.log("Author name: "+ this.authorName);
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
@@ -180,6 +177,16 @@ class SpottitGame {
       }
       
       return true;
+    });
+
+    this._currPage = context.useState(async () => {
+      //return Pages.Picture;
+      if( this.validTileSpotsMarkingDone ) {
+        return Pages.ZoomView;
+      }
+      else {
+        return Pages.Picture;
+      }
     });
 
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
@@ -499,7 +506,12 @@ class SpottitGame {
       this.currPage = Pages.ZoomView;
     }
     */
+   if( this.validTileSpotsMarkingDone ) {
     this.currPage = Pages.ZoomView;
+   } 
+   else{
+    this.currPage = Pages.Picture;
+   }
   }
 
   public showHelpBlock() {
@@ -901,7 +913,14 @@ Devvit.addCustomPostType({
       };
 
       if( wr.type == "requestImage") {//Load image
-        context.ui.webView.postMessage("ZoomistWebview", {type: "image", url: game.imageURL, tilesData: tilesData, ugs: game.userGameStatus });
+        context.ui.webView.postMessage("ZoomistWebview", {type: "image", 
+                                                          url: game.imageURL, 
+                                                          tilesData: tilesData, 
+                                                          ugs: game.userGameStatus, 
+                                                          userIsAuthor: game.userIsAuthor, 
+                                                          validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
+                                                          playersCount: game.leaderBoardRec.length
+                                                        });
       }
       else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
         await game.finishGame();

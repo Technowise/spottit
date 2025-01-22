@@ -25,6 +25,10 @@ const zoomistContainer = document.getElementById("zoomist-container");
 var tilesData = null;//TODO: use class and avoid using global vars later.
 var imageUrl = null;
 var ugs = null;
+var userIsAuthor = false;
+var validTileSpotsMarkingDone = false;
+var playersCount = 0;
+
 
 function loadImage() {
    if ( zoomistImageContainer.childElementCount == 0 ){
@@ -56,6 +60,9 @@ window.onmessage = (ev) => {
       imageUrl = ev.data.data.message.url;
       tilesData =  ev.data.data.message.tilesData;
       ugs = ev.data.data.message.ugs;
+      userIsAuthor = ev.data.data.message.userIsAuthor;
+      validTileSpotsMarkingDone = ev.data.data.message.validTileSpotsMarkingDone;
+      playersCount = ev.data.data.message.playersCount;
 /*
       console.log("Got a new image...");
       const image = document.createElement("img");
@@ -101,19 +108,25 @@ function appendStartResumeOverlay() {
   divStartResume.style.backgroundSize =  "contain";
   divStartResume.style.filter = "blur(1px)";
 
-  if( ugs.state == gameStates.Paused ) {
-    button.innerHTML = "Resume";
-    div.appendChild(button);
-  }
-  else if(ugs.state == gameStates.NotStarted ) {
-    button.innerHTML = "Start";
-    div.appendChild(button);
+  if( userIsAuthor && validTileSpotsMarkingDone) {
+    const messageOverlayDiv = document.createElement("div");
+    messageOverlayDiv.id = "messageOverlay";
+    messageOverlayDiv.innerHTML = "Your Spottit post is ready for others to play. There have been "+playersCount+" players who have taken part so far.";
+    div.appendChild(messageOverlayDiv);
   }
   else if (ugs.state == gameStates.Finished) {
     const messageOverlayDiv = document.createElement("div");
     messageOverlayDiv.id = "messageOverlay";
     messageOverlayDiv.innerHTML = "You have found the spot in "+ugs.counter+" seconds! Click on Leaderboard button to see time of others.";
     div.appendChild(messageOverlayDiv);
+  }
+  else if( ugs.state == gameStates.Paused ) {
+    button.innerHTML = "Resume";
+    div.appendChild(button);
+  }
+  else if(ugs.state == gameStates.NotStarted ) {
+    button.innerHTML = "Start";
+    div.appendChild(button);
   }
   //TODO: handle other states.
   
