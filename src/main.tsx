@@ -431,6 +431,10 @@ class SpottitGame {
       appearance: 'success',
     });
 
+    this._context.ui.webView.postMessage("ZoomistWebview", {type: "messageOverlay", 
+      counter: this.userGameStatus.counter
+    });
+
     if( !this.gameArchived ) {
       const ugs = this.userGameStatus;    
       ugs.state = gameStates.Finished;

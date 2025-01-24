@@ -47,7 +47,7 @@ body {
     opacity: 0.5;
   }
 
-  div.startOrResumeOverlayBG {
+  div.pictureOverlayContainer {
     height: 100%;
     width: 100%;
     position: relative;
@@ -55,16 +55,12 @@ body {
     display:block;
   }
 
-  div.startOrResumeOverlay {
+  div.pictureOverlay {
     height: 100%;
     width: 100%;
     position: absolute;
     text-align:center;
     display:block;
-    /*
-    background-color: rgb(28, 29, 28);
-    opacity: 0.2;
-    */
     z-index: 1;
   }
 

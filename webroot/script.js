@@ -29,6 +29,10 @@ var userIsAuthor = false;
 var validTileSpotsMarkingDone = false;
 var playersCount = 0;
 
+const divPictureOverlayContainer = document.createElement("div");
+divPictureOverlayContainer.className = "pictureOverlayContainer";
+divPictureOverlayContainer.id = "pictureOverlayContainer";
+
 
 function loadImage() {
    if ( zoomistImageContainer.childElementCount == 0 ){
@@ -85,55 +89,57 @@ window.onmessage = (ev) => {
       });
 */
       imageAdded = true;
-      appendStartResumeOverlay();
+      appendBGOverlay();
       //TODO: add tilesData overlay only after clicking on start/resume button.
       //appendOverlay(tilesData);
   }
+  else if( type == "messageOverlay" ) {
+    const button = document.getElementById("startResumeButton");
+    button.style.display = "none";
+    appendMessageOverlay(divPictureOverlayContainer, "You have found the spot in "+ev.data.data.message.counter+" seconds! Click on Leaderboard button to see time of others.");
+    //document.body.appendChild(div);
+    //TODO: Figure out proper way to add this.
+    zoomistContainer.style.display = "none";
+    divPictureOverlayContainer.style.display = "block";
+  }
 }
 
-function appendStartResumeOverlay() {
-  const div = document.createElement("div");
-  div.className = "startOrResumeOverlayBG";
-  div.id = "startOrResumeOverlayBG";
+function appendBGOverlay() {
   const button = document.createElement("button");
   button.id = "startResumeButton";
-  const divStartResume = document.createElement("div");
-  divStartResume.className = "startOrResumeOverlay";
-  divStartResume.id = "startOrResumeOverlay";
+  const divPictureOverlay = document.createElement("div");
+  divPictureOverlay.className = "pictureOverlay";
+  divPictureOverlay.id = "pictureOverlay";
 
+  divPictureOverlay.style.backgroundImage = "url('"+imageUrl+"')";
+  divPictureOverlay.style.backgroundPosition = "center";
+  divPictureOverlay.style.backgroundRepeat = "no-repeat";
+  divPictureOverlay.style.backgroundSize =  "contain";
 
-  divStartResume.style.backgroundImage = "url('"+imageUrl+"')";
-  divStartResume.style.backgroundPosition = "center";
-  divStartResume.style.backgroundRepeat = "no-repeat";
-  divStartResume.style.backgroundSize =  "contain";
-  divStartResume.style.filter = "blur(1px)";
+  if( (ugs.state == gameStates.Paused || ugs.state == gameStates.NotStarted) &&  !userIsAuthor ) {
+    divPictureOverlay.style.filter = "blur(1px)";
+  }
 
   if( userIsAuthor && validTileSpotsMarkingDone) {
-    const messageOverlayDiv = document.createElement("div");
-    messageOverlayDiv.id = "messageOverlay";
-    messageOverlayDiv.innerHTML = "Your Spottit post is ready for others to play. There have been "+playersCount+" players who have taken part so far.";
-    div.appendChild(messageOverlayDiv);
+    appendMessageOverlay(divPictureOverlayContainer, "Your Spottit post is ready for others to play. There have been "+playersCount+" players who have taken part so far.");
   }
   else if (ugs.state == gameStates.Finished) {
-    const messageOverlayDiv = document.createElement("div");
-    messageOverlayDiv.id = "messageOverlay";
-    messageOverlayDiv.innerHTML = "You have found the spot in "+ugs.counter+" seconds! Click on Leaderboard button to see time of others.";
-    div.appendChild(messageOverlayDiv);
+    appendMessageOverlay(divPictureOverlayContainer, "You have found the spot in "+ugs.counter+" seconds! Click on Leaderboard button to see time of others.");
   }
   else if( ugs.state == gameStates.Paused ) {
     button.innerHTML = "Resume";
-    div.appendChild(button);
+    divPictureOverlayContainer.appendChild(button);
   }
   else if(ugs.state == gameStates.NotStarted ) {
     button.innerHTML = "Start";
-    div.appendChild(button);
+    divPictureOverlayContainer.appendChild(button);
   }
   //TODO: handle other states.
   
   button.addEventListener("click", function() {
     console.log("You clicked on start!");
-    var div = document.getElementById('startOrResumeOverlayBG');
-    div.style.display = "none";
+    //var divPictureOverlayContainer = document.getElementById('pictureOverlayContainer');
+    divPictureOverlayContainer.style.display = "none";
     zoomistContainer.style.display = "block";
 
     const image = document.createElement("img");
@@ -156,7 +162,7 @@ function appendStartResumeOverlay() {
       setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
     });
 
-    appendOverlay(tilesData);
+    appendTilesOverlay(tilesData);
 
     window.parent.postMessage({
       type: 'startOrResumeGame'
@@ -164,14 +170,19 @@ function appendStartResumeOverlay() {
 
   }, false);
 
-  //divStartResume.appendChild(button);
-  div.appendChild(divStartResume);
+  divPictureOverlayContainer.appendChild(divPictureOverlay);
 
-  //TODO: Add start/resume button inside the div.
-  document.body.appendChild(div);
+  document.body.appendChild(divPictureOverlayContainer);
 }
 
-function appendOverlay(tilesData) {
+function appendMessageOverlay(divPictureOverlayContainer, message) {
+  const messageOverlayDiv = document.createElement("div");
+  messageOverlayDiv.id = "messageOverlay";
+  messageOverlayDiv.innerHTML = message;
+  divPictureOverlayContainer.appendChild(messageOverlayDiv);
+}
+
+function appendTilesOverlay(tilesData) {
 
   const div = document.createElement("div");
   div.className = "overlay"
@@ -202,6 +213,7 @@ function appendOverlay(tilesData) {
   div.appendChild(tc);
   zoomistImageContainer.appendChild(div);
 }
+
 
 function sendSuccessfulSpotting() {
 
