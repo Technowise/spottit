@@ -127,11 +127,11 @@ function appendBGOverlay() {
     appendMessageOverlay(divPictureOverlayContainer, "You have found the spot in "+ugs.counter+" seconds! Click on Leaderboard button to see time of others.");
   }
   else if( ugs.state == gameStates.Paused ) {
-    button.innerHTML = "Resume";
+    button.innerHTML = "Resume!";
     divPictureOverlayContainer.appendChild(button);
   }
   else if(ugs.state == gameStates.NotStarted ) {
-    button.innerHTML = "Start";
+    button.innerHTML = "Start!";
     divPictureOverlayContainer.appendChild(button);
   }
   //TODO: handle other states.

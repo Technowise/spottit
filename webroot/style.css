@@ -65,27 +65,28 @@ body {
   }
 
   #startResumeButton {
-    background-color: green;
+    background-color: #016E0B;
     border: none;
     color: white;
-    padding: 20px;
+    padding: 12px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
     margin: 4px 2px;
-    border-radius: 12px;
+    border-radius: 20px;
     position:absolute;
     left: 50%;
     top: 50%;
-    /* transform: translateX(-50%); */
     transform: translate(-50%, -50%);
     z-index: 5;
     opacity: 1;
   }
 
   #startResumeButton:hover {
-    background-color: #294a2f;
+    background-color: #008A10;
+    cursor: pointer;
   }
 
   #messageOverlay {
