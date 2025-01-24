@@ -8,7 +8,6 @@ const sizex = 15.59;
 const sizey = 16;
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
-//const redisExpireTimeSeconds = 300;//5 mins in seconds. Temporary, remove this and uncomment above.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
 const milliseconds = redisExpireTimeSeconds * 1000;
@@ -502,14 +501,6 @@ class SpottitGame {
   }
 
   public setHomepage() {
-    /*
-    if( this.userGameStatus.state == gameStates.Aborted || this.userGameStatus.state == gameStates.Finished || this.userGameStatus.state == gameStates.Paused || this.userGameStatus.state == gameStates.NotStarted) {
-      this.currPage = Pages.Picture;
-    }
-    else if( this.userGameStatus.state == gameStates.Started) {
-      this.currPage = Pages.ZoomView;
-    }
-    */
    if( this.validTileSpotsMarkingDone ) {
     this.currPage = Pages.ZoomView;
    } 
@@ -1146,7 +1137,6 @@ async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients,
 async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClients, postId:string) {
   var postExpireTimestamp = await getPostExpireTimestamp(context, postId);
   var postExpireTimestamp = postExpireTimestamp  - 3600000; //3600000 = 1 hour in milliseconds.
-  //var postExpireTimestamp = postExpireTimestamp  - 60000;// 60000 = one minute in milliseconds - temporary value for testing.
   try {
 
     var postArchiveRuneAt = new Date(postExpireTimestamp);

@@ -59,46 +59,20 @@ window.onmessage = (ev) => {
   var type = ev.data.data.message.type;
   
   if (type  == "image" && !imageAdded ) {
-      console.log("yeh lo, got this message:");
-      console.log(ev.data.data.message);
+
       imageUrl = ev.data.data.message.url;
       tilesData =  ev.data.data.message.tilesData;
       ugs = ev.data.data.message.ugs;
       userIsAuthor = ev.data.data.message.userIsAuthor;
       validTileSpotsMarkingDone = ev.data.data.message.validTileSpotsMarkingDone;
       playersCount = ev.data.data.message.playersCount;
-/*
-      console.log("Got a new image...");
-      const image = document.createElement("img");
-      image.src = url;
-      image.id = "spottitImage";
-
-      zoomistImageContainer.appendChild(image);
-
-      const zoomist = new Zoomist('.zoomist-container', {
-        bounds: false,
-        initScale: 1,
-        slider: true, 
-        zoomer: true,
-        zoomRatio: 0.08
-      });
-
-      zoomist.on('zoom', (zoomist, scale) => {
-        zoomed = true;
-        setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
-      });
-*/
       imageAdded = true;
       appendBGOverlay();
-      //TODO: add tilesData overlay only after clicking on start/resume button.
-      //appendOverlay(tilesData);
   }
   else if( type == "messageOverlay" ) {
     const button = document.getElementById("startResumeButton");
     button.style.display = "none";
     appendMessageOverlay(divPictureOverlayContainer, "You have found the spot in "+ev.data.data.message.counter+" seconds! Click on Leaderboard button to see time of others.");
-    //document.body.appendChild(div);
-    //TODO: Figure out proper way to add this.
     zoomistContainer.style.display = "none";
     divPictureOverlayContainer.style.display = "block";
   }
@@ -134,11 +108,8 @@ function appendBGOverlay() {
     button.innerHTML = "Start!";
     divPictureOverlayContainer.appendChild(button);
   }
-  //TODO: handle other states.
   
   button.addEventListener("click", function() {
-    console.log("You clicked on start!");
-    //var divPictureOverlayContainer = document.getElementById('pictureOverlayContainer');
     divPictureOverlayContainer.style.display = "none";
     zoomistContainer.style.display = "block";
 
