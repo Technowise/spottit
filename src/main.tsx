@@ -127,8 +127,6 @@ class SpottitGame {
     });
 
     this._userIsAuthor = this.currentUsername == this.authorName;
-    console.log("Current username:"+ this.currentUsername);
-    console.log("Author name: "+ this.authorName);
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
@@ -582,10 +580,6 @@ Devvit.addSchedulerJob({
 
     const tilesDataStr = await context.redis.get(myPostId+'TilesDataArray');
     const imageUrl = await context.redis.get(myPostId+'imageURL');
-    console.log("Tiles Data: ");
-    console.log(tilesDataStr);
-    console.log("ImageURL: ");
-    console.log(imageUrl);
 
     if ( (tilesDataStr && tilesDataStr.length > 0 ) && (imageUrl && imageUrl.length > 0 ) ) {
       var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: await getLeaderboardRecords(context, myPostId)};
