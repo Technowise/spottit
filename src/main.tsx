@@ -805,8 +805,9 @@ Devvit.addCustomPostType({
           <text style="body" wrap size="medium" color='black'>
             You can view full image by clicking on the external icon.
           </text> 
+          
+        {/*
           <spacer size="small" />
-
           <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -823,6 +824,7 @@ Devvit.addCustomPostType({
               &nbsp;icon to abort game and show spot.
             </text>
           </hstack>
+          */}
           <spacer size="small" />
           
           <hstack alignment='start middle'>
@@ -994,9 +996,9 @@ Devvit.addCustomPostType({
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
             </>: ""}
             
-            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
+            { /*( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button>
-            </> : "" }
+            </> : "" */ }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock game={game} />

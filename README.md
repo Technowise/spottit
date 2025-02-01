@@ -27,6 +27,8 @@ Help page describes details on how to play the game and the app's features.
 ## Changelog
 * 0.0.12
   * Enhanced the app experience using Webview feature of devvit - added tool to zoom/pan image.
+* 0.0.15
+  * Making use of web-view that allows pinch and zoom, updated the devvit version to 0.11.6.
 
 ## Links
 ### Demo
