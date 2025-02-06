@@ -1,4 +1,4 @@
-import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext } from '@devvit/public-api';
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
 Devvit.configure({redditAPI: true, redis: true });
 
