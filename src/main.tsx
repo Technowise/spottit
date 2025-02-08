@@ -177,13 +177,15 @@ class SpottitGame {
     });
 
     this._currPage = context.useState(async () => {
-      //return Pages.Picture;
+      return Pages.Picture;
+      /*
       if( this.validTileSpotsMarkingDone ) {
         return Pages.ZoomView;
       }
       else {
         return Pages.Picture;
       }
+      */
     });
 
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
@@ -545,17 +547,6 @@ class SpottitGame {
     this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find the spot!`,
       appearance: 'neutral'});
   }
-
-  public showZoomView(alignment:Devvit.Blocks.Alignment){
-    const dBlocks:displayBlocks = this.UIdisplayBlocks;
-    dBlocks.zoomView = true;
-    dBlocks.zoomAlignment = alignment;
-    dBlocks.zoomSelect = false;
-    this.UIdisplayBlocks = dBlocks;
-    this._context.ui.showToast({text: `Click on the zoom icon again to zoom out`,
-      appearance: 'neutral'});
-  }
-
 }
 
 Devvit.addTrigger({
@@ -598,6 +589,53 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
+
+
+    const { mount, postMessage } = useWebView({
+      url: 'zoom-view.html',
+      onMessage: async (message) => {
+
+        const wr = message as webviewDataRequest;
+
+        const tilesData = {
+        data: game.data,
+        resolutionx : resolutionx,
+        resolutiony : resolutiony,
+        sizex: sizex,
+        sizey:sizey
+        };
+
+        if( wr.type == "requestImage") {//Load image
+          console.log("Recieved request for image")
+          postMessage({data: {type: "image", 
+                            url: game.imageURL, 
+                            tilesData: tilesData, 
+                            ugs: game.userGameStatus, 
+                            userIsAuthor: game.userIsAuthor, 
+                            validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
+                            playersCount: game.leaderBoardRec.length
+          }});
+        }
+        else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
+          await game.finishGame();
+        }
+        else if(wr.type == "unsucccessfulSpotting") {
+          await game.incrementAttempts();
+        }
+        else if(wr.type == "startOrResumeGame") {
+          await game.startOrResumeGame();
+        }
+
+        /*
+        if (message.type === 'updateCounter') {
+          // Update Redis
+          await context.redis.set(`counter_${context.postId}`, message.data.newValue);
+        }
+          */
+      },
+    });
+
+
     let cp: JSX.Element[];
  
     const openUserPage = async (username: string) => {
@@ -748,7 +786,8 @@ Devvit.addCustomPostType({
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(0, 0, 0, 0.75)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
-      <button appearance="success" onPress={()=> game.startOrResumeGame()} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
+
+      <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
     </vstack>
     );
   

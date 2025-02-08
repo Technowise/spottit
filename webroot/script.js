@@ -35,11 +35,12 @@ divPictureOverlayContainer.id = "pictureOverlayContainer";
 
 
 function loadImage() {
-   if ( zoomistImageContainer.childElementCount == 0 ){
-        window.parent.postMessage({
-        type: 'requestImage'
-        }, '*');
-    }
+  console.log("Load image called!");
+  if ( zoomistImageContainer.childElementCount == 0 ){
+      window.parent.postMessage({
+      type: 'requestImage'
+      }, '*');
+  }
 }
 
 loadImage();
@@ -54,7 +55,10 @@ const gameStates = Object.freeze( {
   Paused: 4
 });
 
+/*
 window.onmessage = (ev) => {
+  console.log("message received on webview:");
+  console.log(ev.data.data.message);
 
   var type = ev.data.data.message.type;
   
@@ -77,6 +81,36 @@ window.onmessage = (ev) => {
     divPictureOverlayContainer.style.display = "block";
   }
 }
+
+*/
+
+window.addEventListener('message', (event) => {
+  dataObj = event.data.data.message.data;
+  console.log("message received on webview:");
+  console.log(dataObj);
+
+  var type = dataObj.type;
+  
+  if (type  == "image" && !imageAdded ) {
+
+      imageUrl = dataObj.url;
+      tilesData =  dataObj.tilesData;
+      ugs = dataObj.ugs;
+      userIsAuthor = dataObj.userIsAuthor;
+      validTileSpotsMarkingDone = dataObj.validTileSpotsMarkingDone;
+      playersCount = dataObj.playersCount;
+      imageAdded = true;
+      appendBGOverlay();
+  }
+  else if( type == "messageOverlay" ) {
+    const button = document.getElementById("startResumeButton");
+    button.style.display = "none";
+    appendMessageOverlay(divPictureOverlayContainer, "You have found the spot in "+ev.data.data.counter+" seconds! Click on Leaderboard button to see time of others.");
+    zoomistContainer.style.display = "none";
+    divPictureOverlayContainer.style.display = "block";
+  }
+  
+});
 
 function appendBGOverlay() {
   const button = document.createElement("button");
