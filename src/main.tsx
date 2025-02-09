@@ -9,7 +9,8 @@ const sizex = 15.59;
 const sizey = 16;
 */
 
-const sizex = 31.18;
+//const sizex = 31.18;
+const sizex = 31.26;
 const sizey = 32;
 
 const tiles = new Array(resolutionx * resolutiony).fill(0);

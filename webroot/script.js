@@ -29,10 +29,11 @@ var userIsAuthor = false;
 var validTileSpotsMarkingDone = false;
 var playersCount = 0;
 
+/*
 const divPictureOverlayContainer = document.createElement("div");
 divPictureOverlayContainer.className = "pictureOverlayContainer";
 divPictureOverlayContainer.id = "pictureOverlayContainer";
-
+*/
 
 function loadImage() {
   console.log("Load image called!");
@@ -100,7 +101,39 @@ window.addEventListener('message', (event) => {
       validTileSpotsMarkingDone = dataObj.validTileSpotsMarkingDone;
       playersCount = dataObj.playersCount;
       imageAdded = true;
-      appendBGOverlay();
+      //appendBGOverlay();
+
+
+      //divPictureOverlayContainer.style.display = "none";
+      zoomistContainer.style.display = "block";
+  
+      const image = document.createElement("img");
+      image.height = "100%";
+      image.width = "100%";
+      image.src = imageUrl;
+      image.id = "spottitImage";
+      zoomistImageContainer.appendChild(image);
+  
+      const zoomist = new Zoomist('.zoomist-container', {
+        bounds: false,
+        initScale: 1,
+        slider: true, 
+        zoomer: true,
+        zoomRatio: 0.08
+      });
+  
+      zoomist.on('zoom', (zoomist, scale) => {
+        zoomed = true;
+        setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
+      });
+  
+      appendTilesOverlay(tilesData);
+  
+      window.parent.postMessage({
+        type: 'startOrResumeGame'
+      }, '*');
+
+
   }
   else if( type == "messageOverlay" ) {
     const button = document.getElementById("startResumeButton");
