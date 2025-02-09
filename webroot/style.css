@@ -19,15 +19,24 @@ body {
   }
 
   .zoomist-container img {
+    /*
     height: 460.8px;
     width: 344px;
+    */
+    height:100%;
+    width: 100%;
     object-fit: contain;
   }
 
   .zoomist-container div.overlay {
     position:absolute;
+    /*
     height: 460.8px;
     width: 344px;
+    */
+    height:100%;
+    width: 100%;
+
     opacity: 0.5;
     left: 50%;
     transform: translate(-50%, 0);

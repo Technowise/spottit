@@ -501,12 +501,9 @@ class SpottitGame {
   }
 
   public setHomepage() {
-   if( this.validTileSpotsMarkingDone ) {
-    this.currPage = Pages.ZoomView;
-   } 
-   else{
-    this.currPage = Pages.Picture;
-   }
+    if( this.validTileSpotsMarkingDone ) {
+      this.currPage = Pages.Picture;
+    }
   }
 
   public showHelpBlock() {
@@ -633,6 +630,10 @@ Devvit.addCustomPostType({
         }
           */
       },
+      onUnmount: async () => {
+        console.log('Web view closed');
+        game.setHomepage();
+      }
     });
 
 
@@ -929,7 +930,7 @@ Devvit.addCustomPostType({
 
       return null;
     }
-
+/*
     const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
     <webview id="ZoomistWebview" width="100%" height="100%" url="zoom-view.html"  onMessage={ async (msg) => {
       const wr = msg as webviewDataRequest;
@@ -963,7 +964,7 @@ Devvit.addCustomPostType({
       }
     }}/>
     </vstack>);
-
+*/
     const myPostId = context.postId ?? 'defaultPostId';
     const game = new SpottitGame(context, myPostId);
 
@@ -1010,7 +1011,6 @@ Devvit.addCustomPostType({
       <HelpBlock game={game} />,
       <MarkSpotsInfo game={game} />,
       <LeaderBoardBlock game={game} />,
-      <ZoomistView game={game} />,
      ];
 
     if( game.imageURL!="" ) {
