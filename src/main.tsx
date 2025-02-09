@@ -4,8 +4,14 @@ Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
 const resolutiony = 34;
+/*
 const sizex = 15.59;
 const sizey = 16;
+*/
+
+const sizex = 31.18;
+const sizey = 32;
+
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
 const maxWrongAttempts = 30;

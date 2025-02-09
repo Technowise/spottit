@@ -203,7 +203,7 @@ function appendTilesOverlay(tilesData) {
       var tile = tilesData.data[ elementIndex ];
       const t = document.createElement("div");
       t.className = "tile";
-      t.style.top = y * 13.555 + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
+      t.style.top = y * 27.11 + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
       t.style.left = x * tilesData.sizex + 'px';
       if ( tile == 1 ) {
         t.addEventListener("doubletap", sendSuccessfulSpotting);//TODO: Show indication of the spot selected in UI.
