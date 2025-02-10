@@ -991,9 +991,9 @@ Devvit.addCustomPostType({
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
             </>: ""}
             
-            { /*( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
+            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button>
-            </> : "" */ }
+            </> : "" }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
             <StatusBlock game={game} />
