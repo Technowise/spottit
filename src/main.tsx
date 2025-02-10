@@ -707,7 +707,7 @@ Devvit.addCustomPostType({
     };
 
     const InfoBlock = ({ game }: { game: SpottitGame }) => (     
-    <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+    <vstack width="344px" height={'100%'} alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
       <hstack>
         <vstack width="300px" alignment='center middle'>
           <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
@@ -780,7 +780,7 @@ Devvit.addCustomPostType({
       );
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
-    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(0, 0, 0, 0.75)'>
+    <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
       <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
       <spacer size="small"/>
 
@@ -789,14 +789,14 @@ Devvit.addCustomPostType({
     );
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
-      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others.</text>
         <spacer size="medium"/>
       </vstack>
     );
 
     const MaxAttemptsReachedBlock = ({ game }: { game: SpottitGame }) => (
-      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.70)'>
+      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 60)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
       </vstack>
     );
