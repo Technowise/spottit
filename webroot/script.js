@@ -30,7 +30,6 @@ var validTileSpotsMarkingDone = false;
 var playersCount = 0;
 
 function loadImage() {
-  console.log("Load image called!");
   if ( zoomistImageContainer.childElementCount == 0 ){
       window.parent.postMessage({
       type: 'requestImage'
@@ -52,8 +51,6 @@ const gameStates = Object.freeze( {
 
 window.addEventListener('message', (event) => {
   dataObj = event.data.data.message.data;
-  console.log("message received on webview:");
-  console.log(dataObj);
 
   var type = dataObj.type;
   

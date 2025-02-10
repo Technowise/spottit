@@ -517,6 +517,13 @@ class SpottitGame {
     this.setHomepage();
   }
 
+  public pauseGame() {
+    this._counterInterval.stop();
+    const ugs = this.userGameStatus;
+    ugs.state = gameStates.Paused;
+    this.userGameStatus = ugs;
+  }
+
   public async startOrResumeGame(){
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     const ugs = this.userGameStatus;
@@ -598,7 +605,6 @@ Devvit.addCustomPostType({
         };
 
         if( wr.type == "requestImage") {//Load image
-          console.log("Recieved request for image")
           postMessage({data: {type: "image", 
                             url: game.imageURL, 
                             tilesData: tilesData, 
@@ -619,7 +625,9 @@ Devvit.addCustomPostType({
         }
       },
       onUnmount: async () => {
-        console.log('Web view closed');
+        if( game.userGameStatus.state !== gameStates.Finished ) {
+          game.pauseGame();
+        }
         game.setHomepage();
       }
     });
