@@ -181,14 +181,6 @@ class SpottitGame {
 
     this._currPage = context.useState(async () => {
       return Pages.Picture;
-      /*
-      if( this.validTileSpotsMarkingDone ) {
-        return Pages.ZoomView;
-      }
-      else {
-        return Pages.Picture;
-      }
-      */
     });
 
     this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
@@ -625,13 +617,6 @@ Devvit.addCustomPostType({
         else if(wr.type == "startOrResumeGame") {
           await game.startOrResumeGame();
         }
-
-        /*
-        if (message.type === 'updateCounter') {
-          // Update Redis
-          await context.redis.set(`counter_${context.postId}`, message.data.newValue);
-        }
-          */
       },
       onUnmount: async () => {
         console.log('Web view closed');
@@ -933,41 +918,7 @@ Devvit.addCustomPostType({
 
       return null;
     }
-/*
-    const ZoomistView = ({ game }: { game: SpottitGame }) => (<vstack width="100%" height="100%" alignment="top start" backgroundColor='transparent'>
-    <webview id="ZoomistWebview" width="100%" height="100%" url="zoom-view.html"  onMessage={ async (msg) => {
-      const wr = msg as webviewDataRequest;
 
-      const tilesData = {
-       data: game.data,
-       resolutionx : resolutionx,
-       resolutiony : resolutiony,
-       sizex: sizex,
-       sizey:sizey
-      };
-
-      if( wr.type == "requestImage") {//Load image
-        context.ui.webView.postMessage("ZoomistWebview", {type: "image", 
-                                                          url: game.imageURL, 
-                                                          tilesData: tilesData, 
-                                                          ugs: game.userGameStatus, 
-                                                          userIsAuthor: game.userIsAuthor, 
-                                                          validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
-                                                          playersCount: game.leaderBoardRec.length
-                                                        });
-      }
-      else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
-        await game.finishGame();
-      }
-      else if(wr.type == "unsucccessfulSpotting") {
-        await game.incrementAttempts();
-      }
-      else if(wr.type == "startOrResumeGame") {
-        await game.startOrResumeGame();
-      }
-    }}/>
-    </vstack>);
-*/
     const myPostId = context.postId ?? 'defaultPostId';
     const game = new SpottitGame(context, myPostId);
 
@@ -983,15 +934,7 @@ Devvit.addCustomPostType({
             game.checkIfTileIsValid(index);
           }
         }}
-        /*
-        width = "15.59px"
-        height = "13.555px"
 
-        const sizex = 15.59;
-const sizey = 16;
-        */
-        //width = "15.59px"
-        //height = "16px"
         width = {`${sizexBlocks}px`}
         height = {`${sizeyBlocks}px`}
 

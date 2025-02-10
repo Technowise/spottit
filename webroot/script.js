@@ -29,12 +29,6 @@ var userIsAuthor = false;
 var validTileSpotsMarkingDone = false;
 var playersCount = 0;
 
-/*
-const divPictureOverlayContainer = document.createElement("div");
-divPictureOverlayContainer.className = "pictureOverlayContainer";
-divPictureOverlayContainer.id = "pictureOverlayContainer";
-*/
-
 function loadImage() {
   console.log("Load image called!");
   if ( zoomistImageContainer.childElementCount == 0 ){
