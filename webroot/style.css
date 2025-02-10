@@ -19,24 +19,15 @@ body {
   }
 
   .zoomist-container img {
-    /*
-    height: 460.8px;
-    width: 344px;
-    */
-    height: 921.6px;
-    width: 688px;
+    height: 691.2px;
+    width: 516px;
     object-fit: contain;
   }
 
   .zoomist-container div.overlay {
     position:absolute;
-    /*
-    height: 460.8px;
-    width: 344px;
-    */
     height:100%;
     width: 100%;
-
     opacity: 0.5;
     left: 50%;
     transform: translate(-50%, 0);
@@ -45,27 +36,16 @@ body {
 
   .zoomist-container div.overlay .tiles-container{
     position:relative;
-    /*
-    height: 100%;
-    width: 100%;
-    */
-    height: 921.6px;
-    width: 688px;
+    height: 691.2px;
+    width: 516px;
     margin: 0 auto;
   }
 
   .tiles-container .tile {
     position: absolute;
-    /*
-    width: 15.59px;
-    height: 13.555px;
-    */
-    /* width: 31.18px; */
-    width: 31.26px;
-
-    height: 27.11px;
+    width: 23.445px;
+    height: 20.45px;
     opacity: 0.5;
-    background-color: #777;
   }
 
   div.pictureOverlayContainer {

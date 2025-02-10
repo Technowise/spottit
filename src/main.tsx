@@ -4,14 +4,10 @@ Devvit.configure({redditAPI: true, redis: true });
 
 const resolutionx = 22;
 const resolutiony = 34;
-/*
-const sizex = 15.59;
-const sizey = 16;
-*/
-
-//const sizex = 31.18;
-const sizex = 31.26;
-const sizey = 32;
+const sizex = 23.445;
+const sizey = 20.45;
+const sizexBlocks = 15.59;
+const sizeyBlocks = 16;
 
 const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
@@ -650,8 +646,8 @@ Devvit.addCustomPostType({
       context.ui.navigateTo(`https://www.reddit.com/user/${username}/`);
     };
 
-    const PictureTilesWidth = `${resolutionx * sizex}px`;
-    const PictureTilesHeight = `${resolutiony * sizey}px`;
+    const PictureTilesWidth = `${resolutionx * sizexBlocks}px`;
+    const PictureTilesHeight = `${resolutiony * sizeyBlocks}px`;
 
     function splitArray<T>(array: T[], segmentLength: number): T[][] {
       const result: T[][] = [];
@@ -987,8 +983,18 @@ Devvit.addCustomPostType({
             game.checkIfTileIsValid(index);
           }
         }}
-        width = {`${sizex}px`}
-        height = {`${sizey}px`}
+        /*
+        width = "15.59px"
+        height = "13.555px"
+
+        const sizex = 15.59;
+const sizey = 16;
+        */
+        //width = "15.59px"
+        //height = "16px"
+        width = {`${sizexBlocks}px`}
+        height = {`${sizeyBlocks}px`}
+
         backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgb(255, 69, 0)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
       </hstack>
     ));
