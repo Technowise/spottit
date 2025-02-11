@@ -28,6 +28,7 @@ var ugs = null;
 var userIsAuthor = false;
 var validTileSpotsMarkingDone = false;
 var playersCount = 0;
+var successfullySpotted = false;
 
 function loadImage() {
   if ( zoomistImageContainer.childElementCount == 0 ){
@@ -83,7 +84,8 @@ window.addEventListener('message', (event) => {
   
       zoomist.on('zoom', (zoomist, scale) => {
         zoomed = true;
-        setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
+        //setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
+        setTimeout(function() { zoomed = false;}, 1800);//set it to false after possible double-click time has passed.
       });
   
       appendTilesOverlay(tilesData);
@@ -145,19 +147,22 @@ function appendTilesOverlay(tilesData) {
 
 function sendSuccessfulSpotting() {
 
-  if( !zoomed ) {
+  if( !zoomed && !successfullySpotted ) {
     window.parent.postMessage({
       type: 'succcessfulSpotting'
       }, '*');
+      successfullySpotted = true;
+  } else if ( successfullySpotted) {
+    window.parent.postMessage({
+      type: 'repeatSucccessfulSpotting'
+      }, '*');
   }
-  zoomed = false;
 }
 
 function sendFailedSpotting() {
-  if( !zoomed ) {
+  if( !zoomed && !successfullySpotted ) {
     window.parent.postMessage({
       type: 'unsucccessfulSpotting'
       }, '*');
   }
-  zoomed = false;
 }

@@ -419,6 +419,15 @@ class SpottitGame {
     await this.redis.hDel(this.myPostId, [username]);
   }
 
+  public async alertRepeatSpotting() {
+    if( this.userGameStatus.state == gameStates.Finished ) {
+      this._context.ui.showToast({
+        text: "You have already found the spot, close this dialog to check-out the Leaderboard!",
+        appearance: 'success',
+      });
+    }
+  }
+
   public async finishGame() {
     this._context.ui.showToast({
       text: "You have successfully found the spot in "+this.userGameStatus.counter+" seconds, Congratulations!",
@@ -622,6 +631,9 @@ Devvit.addCustomPostType({
         }
         else if(wr.type == "startOrResumeGame") {
           await game.startOrResumeGame();
+        }
+        else if(wr.type == "repeatSucccessfulSpotting") {//Finish the game with usual process.
+          await game.alertRepeatSpotting();
         }
       },
       onUnmount: async () => {
