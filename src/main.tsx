@@ -115,8 +115,8 @@ class SpottitGame {
     });
 
     this._currentUsername = context.useState(async () => {
-      const currentUser = await context.reddit.getCurrentUser();
-      return currentUser?.username??'defaultUsername';
+      const currentUserName = await context.reddit.getCurrentUsername() ??'defaultUsername';
+      return currentUserName;
     });
 
     this._redisKeyPrefix = this.myPostId + this.currentUsername;
@@ -946,7 +946,7 @@ Devvit.addCustomPostType({
         width = {`${sizexBlocks}px`}
         height = {`${sizeyBlocks}px`}
 
-        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgb(255, 69, 0)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
+        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(255, 69, 0, 0.9)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
       </hstack>
     ));
 
@@ -1057,7 +1057,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
   async (event, context) => {// onSubmit handler
     const ui  = context.ui;
     const reddit = context.reddit;
-    const subreddit = await reddit.getCurrentSubreddit();
+    const subredditName = await reddit.getCurrentSubredditName();
     const postImage = event.values.postImage;
     const flairId = event.values.flair ? event.values.flair[0] : null;
 
@@ -1088,14 +1088,14 @@ const pictureInputForm = Devvit.createForm(  (data) => {
       </vstack>
       ),
       title: `${event.values.title} [Spottit]`,
-      subredditName: subreddit.name,
+      subredditName: subredditName,
       flairId: flairId
     });
   
     const {redis} = context;
     const myPostId = post.id;
-    const currentUsr = await context.reddit.getCurrentUser();
-    const currentUsrName = currentUsr?.username ?? "";
+    const currentUsrname = await context.reddit.getCurrentUsername();
+    const currentUsrName = currentUsrname ?? "defaultUsername";
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
