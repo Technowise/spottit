@@ -1,7 +1,7 @@
 # Spottit
-This is a game of spotting things in a posted picture. The app adds ability to create picture posts where post creator can mark specific spots in the picture and then ask other users to find that spot. This game is inspired by /r/FindTheSniper subreddit. Each participant's time taken to find the spot is measured, so leaderboard ranking is based on the time taken to find the spot. Those who wish to view the solution/spot can click on the eye icon - this will also abort the game for that participant. This is an app developed using Reddit app Developer Platform.
+This is a game of spotting things in a picture. The app adds ability to create picture posts where post creator can mark specific spots in the picture and then ask other users to find that spot. This game is inspired by /r/FindTheSniper subreddit. Each participant's time taken to find the spot is measured and shown in leaderboard ranked on total time taken. Those who wish to view the solution/spot can click on the eye icon - this will also abort the game for that participant. This is an app developed using Reddit app Developer Platform.
 
-![Screenshot](https://i.imgur.com/D9hbtfu.png)
+![Desktop Modal View](https://i.imgur.com/NnfUEgE.png) ![Desktop Extended View](https://i.imgur.com/P8ghNpy.jpeg)  ![Mobile App Full Screen View](https://i.imgur.com/WTW5RJ4.jpeg) 
 
 ### Install the app:
 Moderators can install the app to their subreddit by going to [https://developers.reddit.com/apps/spottit-game](https://developers.reddit.com/apps/spottit-game)
@@ -29,6 +29,8 @@ Help page describes details on how to play the game and the app's features.
   * Enhanced the app experience using Webview feature of devvit - added tool to zoom/pan image.
 * 0.0.15
   * Making use of web-view that allows pinch and zoom, updated the devvit version to 0.11.6.
+* 0.0.19
+  * Migrated to new web-view which allows to go full screen on mobile app, and wide modal view in desktop.
 
 ## Links
 ### Demo
