@@ -87,6 +87,11 @@ window.addEventListener('message', (event) => {
         //setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
         setTimeout(function() { zoomed = false;}, 1800);//set it to false after possible double-click time has passed.
       });
+
+      zoomist.on('ready', (zoomist) => {
+        var bodyElement = document.getElementsByTagName("body")[0];
+        bodyElement.style.backgroundImage = "";
+      });
   
       appendTilesOverlay(tilesData);
   
