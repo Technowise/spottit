@@ -450,7 +450,7 @@ class SpottitGame {
       await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
       this.userGameStatus = ugs;
     }
-
+    await this.createPostArchiveCommentJob();//Add/update archive comment.
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
     dBlocks.picture = true;
@@ -555,6 +555,27 @@ class SpottitGame {
     this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find the spot!`,
       appearance: 'neutral'});
   }
+
+  public async createPostArchiveCommentJob() {
+    try {
+      var dateNow = new Date();
+      var postArchiveRuneAt = new Date(dateNow.getTime() + 2000);//Schedule it 2 seconds after now.
+      console.log("Post archive job is being scheduled to run at: "+postArchiveRuneAt.toString() );
+  
+      const jobId = await this._context.scheduler.runJob({
+        runAt: postArchiveRuneAt,
+        name: 'post_archive_comment_job',
+        data: { 
+          postId: this.myPostId,
+        }
+      });
+      console.log("Created job schedule for post_archive_comment_job: "+jobId);
+    } catch (e) {
+      console.log('error - was not able to create post_archive_comment_job:', e);
+      throw e;
+    }
+  }
+
 }
 
 Devvit.addTrigger({
@@ -572,7 +593,7 @@ Devvit.addTrigger({
 
 
 Devvit.addSchedulerJob({
-  name: 'post_archive_job',  
+  name: 'post_archive_comment_job',  
   onRun: async(event, context) => {
     console.log("################Running the scheduled task for archive job...###########");
     var myPostId = event.data!.postId as string;
@@ -584,11 +605,25 @@ Devvit.addSchedulerJob({
       var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: await getLeaderboardRecords(context, myPostId)};
 
       var archiveCommentJson = JSON.stringify(pa);
-      const redditComment = await context.reddit.submitComment({
-            id: `${myPostId}`,
-            text: archiveCommentJson
-          });
-      console.log("Created post archive with comment-id:"+redditComment.id );
+
+      const archiveCommentId = await context.redis.get(myPostId+'archiveCommentId');
+
+      if (archiveCommentId && archiveCommentId.length > 0 ) {
+        //Update existing archive comment.
+        const comment = await context.reddit.getCommentById(archiveCommentId);
+        if( comment) {
+          await comment.edit({ text: archiveCommentJson });
+          console.log("Update post archive with comment-id: "+archiveCommentId);
+        }
+      }
+      else {//Create new archive comment.
+        const redditComment = await context.reddit.submitComment({
+          id: `${myPostId}`,
+          text: archiveCommentJson
+        });
+        console.log("Created post archive with comment-id:"+redditComment.id );
+        await context.redis.set(myPostId+'archiveCommentId', redditComment.id, {expiration: expireTime} );
+      }
     }
   },
 });
@@ -1112,7 +1147,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
 
-    await createPostArchiveSchedule(context, myPostId);
+    //await createPostArchiveSchedule(context, myPostId);
     console.log("Redis expire time set to "+expireTime.toString());
   
     ui.showToast({
@@ -1144,7 +1179,7 @@ async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients,
   const post = await context.reddit.getPostById(postId);
   return post.createdAt.getTime() + milliseconds;
 }
-
+/*
 async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClients, postId:string) {
   var postExpireTimestamp = await getPostExpireTimestamp(context, postId);
   var postExpireTimestamp = postExpireTimestamp  - 3600000; //3600000 = 1 hour in milliseconds.
@@ -1155,18 +1190,19 @@ async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClien
 
     const jobId = await context.scheduler.runJob({
       runAt: postArchiveRuneAt,
-      name: 'post_archive_job',
+      name: 'post_archive_comment_job',
       data: { 
         postId: postId,
       }
     });
-    await context.redis.set(postId+'post_archive_job', jobId, {expiration: expireTime});
-    console.log("Created job schedule for post_archive_job: "+jobId);
+    await context.redis.set(postId+'post_archive_comment_job', jobId, {expiration: expireTime});
+    console.log("Created job schedule for post_archive_comment_job: "+jobId);
   } catch (e) {
-    console.log('error - was not able to create post_archive_job:', e);
+    console.log('error - was not able to create post_archive_comment_job:', e);
     throw e;
   }
 }
+  */
 
 async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, postId:string ) {
   const previousLeaderBoard = await context.redis.hGetAll(postId);
