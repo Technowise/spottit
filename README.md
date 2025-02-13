@@ -31,6 +31,9 @@ Help page describes details on how to play the game and the app's features.
   * Making use of web-view that allows pinch and zoom, updated the devvit version to 0.11.6.
 * 0.0.19
   * Migrated to new web-view which allows to go full screen on mobile app, and wide modal view in desktop.
+* 0.0.21
+  * Post archival comment made to be added/updated after every new entry to leaderboard.
+
 
 ## Links
 ### Demo
