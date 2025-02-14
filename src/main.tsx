@@ -449,8 +449,9 @@ class SpottitGame {
       await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
       await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
       this.userGameStatus = ugs;
+      await this.createPostArchiveCommentJob();//Add/update archive comment.
     }
-    await this.createPostArchiveCommentJob();//Add/update archive comment.
+  
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
     dBlocks.picture = true;
