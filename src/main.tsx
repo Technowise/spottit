@@ -931,7 +931,7 @@ Devvit.addCustomPostType({
 
     const PictureBlock = ({ game }: { game: SpottitGame }) => (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment= "top start" backgroundColor='#222'>
+        <hstack width="344px" height="100%" alignment= "top start" backgroundColor='#555'>
           <image
             width= "344px" 
             height="460.8px" 
