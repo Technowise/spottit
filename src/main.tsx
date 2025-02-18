@@ -931,7 +931,7 @@ Devvit.addCustomPostType({
 
     const PictureBlock = ({ game }: { game: SpottitGame }) => (
       <zstack alignment="top start" width="344px" height="100%" cornerRadius="small" border="none">
-        <hstack width="344px" height="100%" alignment= "top start" backgroundColor='transparent'>
+        <hstack width="344px" height="100%" alignment= "top start" backgroundColor='#222'>
           <image
             width= "344px" 
             height="460.8px" 
@@ -962,13 +962,13 @@ Devvit.addCustomPostType({
       else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state == gameStates.Paused ||  (game.userGameStatus.state == gameStates.NotStarted && game.validTileSpotsMarkingDone ) ) {
+      else if( game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone )  {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
         return <GameFinishedBlock game={game} />;
       }
-      else if (game.userGameStatus.state == gameStates.Aborted && game.userGameStatus.attemptsCount == maxWrongAttempts ) {
+      else if (game.userGameStatus.state == gameStates.Aborted && game.userGameStatus.attemptsCount == maxWrongAttempts ) {//TODO: remove or change this block.
         return <MaxAttemptsReachedBlock game={game} />;
       }
 
