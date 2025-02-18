@@ -553,7 +553,7 @@ class SpottitGame {
     dBlocks.zoomView = true;
     this.UIdisplayBlocks = dBlocks;
 
-    this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find the spot!`,
+    this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find!`,
       appearance: 'neutral'});
   }
 

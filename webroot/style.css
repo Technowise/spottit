@@ -12,6 +12,10 @@ body {
     background-repeat: no-repeat;
     background-position: center; 
   }
+  
+  .zoomist-wrapper {
+    background-color: #222;
+  }
 
   .zoomist-container {
     height:100%;
