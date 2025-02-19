@@ -8,8 +8,6 @@ const sizex = 23.445;
 const sizey = 20.45;
 const sizexBlocks = 15.59;
 const sizeyBlocks = 16;
-
-const tiles = new Array(resolutionx * resolutiony).fill(0);
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
@@ -243,7 +241,7 @@ class SpottitGame {
             }
           }
         }
-        return tiles;//default to empty array.
+        return new Array(resolutionx * resolutiony).fill(0);
       }
     );
 
@@ -592,7 +590,6 @@ Devvit.addTrigger({
   },
 });
 
-
 Devvit.addSchedulerJob({
   name: 'post_archive_comment_job',  
   onRun: async(event, context) => {
@@ -609,8 +606,7 @@ Devvit.addSchedulerJob({
 
       const archiveCommentId = await context.redis.get(myPostId+'archiveCommentId');
 
-      if (archiveCommentId && archiveCommentId.length > 0 ) {
-        //Update existing archive comment.
+      if (archiveCommentId && archiveCommentId.length > 0 ) {//Update existing archive comment.
         const comment = await context.reddit.getCommentById(archiveCommentId);
         if( comment) {
           await comment.edit({ text: archiveCommentJson });
@@ -633,14 +629,11 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
-
-
     const { mount, postMessage } = useWebView({
       url: 'zoom-view.html',
       onMessage: async (message) => {
 
         const wr = message as webviewDataRequest;
-
         const tilesData = {
         data: game.data,
         resolutionx : resolutionx,
@@ -679,7 +672,6 @@ Devvit.addCustomPostType({
         game.setHomepage();
       }
     });
-
 
     let cp: JSX.Element[];
  
@@ -878,8 +870,8 @@ Devvit.addCustomPostType({
           <text style="body" wrap size="medium" color='black'>
             After you find the spot, you can double-tap/double-click on the spot to register. 
           </text>
-          <spacer size="small" />
 
+          <spacer size="small" />
           <hstack alignment='start middle'>
             <icon name="external" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -890,7 +882,6 @@ Devvit.addCustomPostType({
             You can view full image by clicking on the external icon.
           </text> 
           
-        {/*
           <spacer size="small" />
           <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
@@ -908,9 +899,8 @@ Devvit.addCustomPostType({
               &nbsp;icon to abort game and show spot.
             </text>
           </hstack>
-          */}
-          <spacer size="small" />
-          
+    
+          <spacer size="small" />  
           <hstack alignment='start middle'>
             <icon name="list-numbered" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
@@ -1148,7 +1138,6 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
 
-    //await createPostArchiveSchedule(context, myPostId);
     console.log("Redis expire time set to "+expireTime.toString());
   
     ui.showToast({
@@ -1180,30 +1169,6 @@ async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients,
   const post = await context.reddit.getPostById(postId);
   return post.createdAt.getTime() + milliseconds;
 }
-/*
-async function createPostArchiveSchedule(context:TriggerContext| ContextAPIClients, postId:string) {
-  var postExpireTimestamp = await getPostExpireTimestamp(context, postId);
-  var postExpireTimestamp = postExpireTimestamp  - 3600000; //3600000 = 1 hour in milliseconds.
-  try {
-
-    var postArchiveRuneAt = new Date(postExpireTimestamp);
-    console.log("Post archive job is being scheduled to run at: "+postArchiveRuneAt.toString() );
-
-    const jobId = await context.scheduler.runJob({
-      runAt: postArchiveRuneAt,
-      name: 'post_archive_comment_job',
-      data: { 
-        postId: postId,
-      }
-    });
-    await context.redis.set(postId+'post_archive_comment_job', jobId, {expiration: expireTime});
-    console.log("Created job schedule for post_archive_comment_job: "+jobId);
-  } catch (e) {
-    console.log('error - was not able to create post_archive_comment_job:', e);
-    throw e;
-  }
-}
-  */
 
 async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, postId:string ) {
   const previousLeaderBoard = await context.redis.hGetAll(postId);
