@@ -594,9 +594,7 @@ Devvit.addSchedulerJob({
 
     if ( (tilesDataStr && tilesDataStr.length > 0 ) && (imageUrl && imageUrl.length > 0 ) ) {
       var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: await getLeaderboardRecords(context, myPostId)};
-
       var archiveCommentJson = JSON.stringify(pa);
-
       const archiveCommentId = await context.redis.get(myPostId+'archiveCommentId');
 
       if (archiveCommentId && archiveCommentId.length > 0 ) {//Update existing archive comment.
