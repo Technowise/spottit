@@ -11,8 +11,8 @@ const sizeyBlocks = 16;
 const redisExpireTimeSeconds = 2592000;//30 days in seconds.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
-const milliseconds = redisExpireTimeSeconds * 1000;
-const expireTime = new Date(dateNow.getTime() + milliseconds);
+const redisExpireTimeMilliseconds = redisExpireTimeSeconds * 1000;
+const expireTime = new Date(dateNow.getTime() + redisExpireTimeMilliseconds);
 const leaderBoardPageSize = 13;
 
 type leaderBoard = {
@@ -181,7 +181,7 @@ class SpottitGame {
       return Pages.Picture;
     });
 
-    this._UIdisplayBlocks = context.useState<displayBlocks>(() =>{
+    this._UIdisplayBlocks = context.useState<displayBlocks>(() => {
       const dBlocks:displayBlocks = {help:false, 
         picture: this.userIsAuthor && !this.validTileSpotsMarkingDone && !this._ScreenIsWide ? false:  true,
         spotTiles: this.userIsAuthor || this.userGameStatus.state == gameStates.Started || this.userGameStatus.state == gameStates.Aborted,
@@ -372,8 +372,7 @@ class SpottitGame {
   }
 
   public async finishMarkingSpots() {
-    if( this.data.find((element) => element == 1) ) 
-    {
+    if( this.data.find((element) => element == 1) ) {
       const dBlocks:displayBlocks = this.UIdisplayBlocks;
       this.validTileSpotsMarkingDone = true;
       await this.redis.set(this.myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
@@ -390,7 +389,7 @@ class SpottitGame {
     }
   }
 
-  public async showTheSpotAndAbort(){
+  public async showTheSpotAndAbort() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'true', {expiration: expireTime});
     const ugs = this.userGameStatus;
@@ -483,11 +482,11 @@ class SpottitGame {
     }
   }
 
-  public async openIntroPage(){
+  public async openIntroPage() {
     this._context.ui.navigateTo('https://www.reddit.com/r/Spottit/comments/1ethp30/introduction_to_spottit_game/');
   };
 
-  public async openSourceImage(){
+  public async openSourceImage() {
     this._context.ui.navigateTo(this.imageURL);
   };
 
@@ -532,7 +531,7 @@ class SpottitGame {
     this.userGameStatus = ugs;
   }
 
-  public async startOrResumeGame(){
+  public async startOrResumeGame() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     const ugs = this.userGameStatus;
     ugs.state = gameStates.Started;
@@ -559,8 +558,6 @@ class SpottitGame {
     try {
       var dateNow = new Date();
       var postArchiveRuneAt = new Date(dateNow.getTime() + 2000);//Schedule it 2 seconds after now.
-      console.log("Post archive job is being scheduled to run at: "+postArchiveRuneAt.toString() );
-  
       const jobId = await this._context.scheduler.runJob({
         runAt: postArchiveRuneAt,
         name: 'post_archive_comment_job',
@@ -568,13 +565,11 @@ class SpottitGame {
           postId: this.myPostId,
         }
       });
-      console.log("Created job schedule for post_archive_comment_job: "+jobId);
     } catch (e) {
       console.log('error - was not able to create post_archive_comment_job:', e);
       throw e;
     }
   }
-
 }
 
 Devvit.addTrigger({
@@ -593,9 +588,7 @@ Devvit.addTrigger({
 Devvit.addSchedulerJob({
   name: 'post_archive_comment_job',  
   onRun: async(event, context) => {
-    console.log("################Running the scheduled task for archive job...###########");
-    var myPostId = event.data!.postId as string;
-
+    const myPostId = event.data!.postId as string;
     const tilesDataStr = await context.redis.get(myPostId+'TilesDataArray');
     const imageUrl = await context.redis.get(myPostId+'imageURL');
 
@@ -610,7 +603,6 @@ Devvit.addSchedulerJob({
         const comment = await context.reddit.getCommentById(archiveCommentId);
         if( comment) {
           await comment.edit({ text: archiveCommentJson });
-          console.log("Update post archive with comment-id: "+archiveCommentId);
         }
       }
       else {//Create new archive comment.
@@ -618,7 +610,6 @@ Devvit.addSchedulerJob({
           id: `${myPostId}`,
           text: archiveCommentJson
         });
-        console.log("Created post archive with comment-id:"+redditComment.id );
         await context.redis.set(myPostId+'archiveCommentId', redditComment.id, {expiration: expireTime} );
       }
     }
@@ -1137,8 +1128,6 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     await redis.set(myPostId+'imageURL', postImage, {expiration: expireTime});
     await redis.set(myPostId+'authorName', currentUsrName, {expiration: expireTime} );
     await redis.set(myPostId+'ValidTileSpotsMarkingDone', 'false', {expiration: expireTime});
-
-    console.log("Redis expire time set to "+expireTime.toString());
   
     ui.showToast({
       text: `Successfully created a Spottit post! Please mark the spot that participants should find by going to your post.`,
@@ -1167,7 +1156,7 @@ async function showCreatePostForm(context:ContextAPIClients) {
 
 async function getPostExpireTimestamp(context:TriggerContext| ContextAPIClients, postId:string ) {
   const post = await context.reddit.getPostById(postId);
-  return post.createdAt.getTime() + milliseconds;
+  return post.createdAt.getTime() + redisExpireTimeMilliseconds;
 }
 
 async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, postId:string ) {
