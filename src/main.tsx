@@ -83,7 +83,8 @@ class SpottitGame {
   private _validTileSpotsMarkingDone: UseStateResult<boolean>;
   private _leaderBoardRec:UseStateResult<leaderBoard[]>;
   private _imageURL:UseStateResult<string>;
-  private _data: UseStateResult<number[]>;
+  private _tilesData: UseStateResult<number[]>;
+  private _tilesData2D: UseStateResult<number[][]>;
   private _userIsAuthor: boolean;
   private _redisKeyPrefix: string;
   private _isGameArchived: UseStateResult<boolean>;;
@@ -218,7 +219,7 @@ class SpottitGame {
       return "";
     });
 
-    this._data = context.useState(
+    this._tilesData = context.useState(
       async () => {
         const tilesDataStr = await context.redis.get(this.myPostId+'TilesDataArray');
         if (tilesDataStr && tilesDataStr.length > 0 ) {
@@ -242,6 +243,18 @@ class SpottitGame {
           }
         }
         return new Array(resolutionx * resolutiony).fill(0);
+      }
+    );
+
+    this._tilesData2D = context.useState(
+       () => {
+        var array2d = new Array(resolutiony).fill(0).map(() => new Array(resolutionx).fill(0));
+        for(var row=0; row<resolutiony; row++ ) {
+          for( var col=0; col< resolutionx; col++) {
+            array2d[row][col] = this._tilesData[0][ (row * resolutionx )  + col];
+          }
+        }
+        return array2d;
       }
     );
 
@@ -300,9 +313,9 @@ class SpottitGame {
     this._leaderBoardRec[1](value);
   }
 
-  private set data(value: number[]) {
-    this._data[0] = value;
-    this._data[1](value);
+  private set tilesData(value: number[]) {
+    this._tilesData[0] = value;
+    this._tilesData[1](value);
   }
 
   private set imageURL(value: string) {
@@ -326,8 +339,8 @@ class SpottitGame {
     return this._userGameStatus[0];
   }
 
-  public get data() {
-    return this._data[0];
+  public get tilesData() {
+    return this._tilesData[0];
   }
 
   public get validTileSpotsMarkingDone() {
@@ -360,7 +373,7 @@ class SpottitGame {
   }
 
   public async toggleValidTile( index=0 ) {
-    var d = this.data;
+    var d = this.tilesData;
     if( d[index] == 1 ) {
       d[index] = 0;
     }
@@ -368,15 +381,15 @@ class SpottitGame {
     {
       d[index] = 1;
     }
-    this.data = d;
+    this.tilesData = d;
   }
 
   public async finishMarkingSpots() {
-    if( this.data.find((element) => element == 1) ) {
+    if( this.tilesData.find((element) => element == 1) ) {
       const dBlocks:displayBlocks = this.UIdisplayBlocks;
       this.validTileSpotsMarkingDone = true;
       await this.redis.set(this.myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
-      const redisDataStr = this.data.join(","); 
+      const redisDataStr = this.tilesData.join(","); 
       await this.redis.set(this.myPostId+'TilesDataArray', redisDataStr, {expiration: expireTime});
       dBlocks.spots = false;
       this.UIdisplayBlocks = dBlocks;
@@ -474,7 +487,7 @@ class SpottitGame {
   }
 
   public async checkIfTileIsValid(index:number) {
-    if( this._data[0][index] ==  1 && this.userGameStatus.counter > 0 ) {
+    if( this._tilesData[0][index] ==  1 && this.userGameStatus.counter > 0 ) {
       await this.finishGame();
     }
     else {
@@ -624,7 +637,7 @@ Devvit.addCustomPostType({
 
         const wr = message as webviewDataRequest;
         const tilesData = {
-        data: game.data,
+        data: game.tilesData,
         resolutionx : resolutionx,
         resolutiony : resolutiony,
         sizex: sizex,
@@ -959,7 +972,7 @@ Devvit.addCustomPostType({
 
     const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
     
-    const pixels = game.data.map((pixel, index) => (
+    const pixels = game.tilesData.map((pixel, index) => (
       <hstack
         onPress={() => {
           if( !game.validTileSpotsMarkingDone && game.userIsAuthor ) {
