@@ -87,7 +87,8 @@ class SpottitGame {
   private _tilesData2D: UseStateResult<number[][]>;
   private _userIsAuthor: boolean;
   private _redisKeyPrefix: string;
-  private _isGameArchived: UseStateResult<boolean>;;
+  private _isGameArchived: UseStateResult<boolean>;
+  private _spotsCount: UseStateResult<number>;
 
   constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
@@ -246,6 +247,12 @@ class SpottitGame {
       }
     );
 
+    this._spotsCount = context.useState(
+      () => {
+        return 0;
+     }
+    );
+
     this._tilesData2D = context.useState(
        () => {
         var array2d = new Array(resolutiony).fill(0).map(() => new Array(resolutionx).fill(0));
@@ -254,9 +261,14 @@ class SpottitGame {
             array2d[row][col] = this._tilesData[0][ (row * resolutionx )  + col];
           }
         }
+        this._spotsCount[0] =  new Set(this._tilesData[0]).size - 1;
+        console.log("Total spots: "+this._spotsCount );
         return array2d;
       }
+
     );
+
+
 
     this._isGameArchived = context.useState(async () => {
       return await this.isGameArchived();
@@ -293,6 +305,11 @@ class SpottitGame {
     this._UIdisplayBlocks[1](value);
   }
 
+  public set spotsCount(value:number) {
+    this._spotsCount[0] = value;
+    this._spotsCount[1](value);
+  }
+
   public set validTileSpotsMarkingDone(value: boolean) {
     this._validTileSpotsMarkingDone[0] = value;
     this._validTileSpotsMarkingDone[1](value);
@@ -316,6 +333,11 @@ class SpottitGame {
   private set tilesData(value: number[]) {
     this._tilesData[0] = value;
     this._tilesData[1](value);
+  }
+
+  private set tilesData2D(value: number[][]) {
+    this._tilesData2D[0] = value;
+    this._tilesData2D[1](value);
   }
 
   private set imageURL(value: string) {
@@ -350,6 +372,11 @@ class SpottitGame {
   public get myPostId() {
     return this._myPostId[0];
   }
+/*
+  public get spotsCount() {
+    return this._spotsCount[0];
+  }
+  */
 
   public get currentUsername() {
     return this._currentUsername[0];
@@ -374,18 +401,79 @@ class SpottitGame {
 
   public async toggleValidTile( index=0 ) {
     var d = this.tilesData;
-    if( d[index] == 1 ) {
+    if( d[index] != 0 ) {
       d[index] = 0;
     }
-    else
-    {
-      d[index] = 1;
+    else {
+      d[index] = this.getSpotCount(index);//1;
     }
     this.tilesData = d;
   }
 
+  public getSpotCount( index:number ) {//Check the nieghboring tiles, and use their number if found. Otherwise increment spotsCount and use that number.
+    const row = Math.floor( index / resolutionx );
+    const col = index - (row * resolutionx);
+    console.log("clicked row: "+row);
+    console.log("clicked column: "+col);
+
+    var t2d = this._tilesData2D[0];
+
+    if( col > 0 ) {//Check previous columns for selected spots.
+      if( row > 0 &&  t2d[row -1 ][col - 1] != 0 ) {
+        t2d[row][col] = t2d[row -1 ][col - 1];
+      }
+
+      if( t2d[row][col -1] != 0 ) {
+        t2d[row][col] = t2d[row][col -1];
+      }
+
+      if( row + 1 < resolutiony && t2d[row +1 ][col - 1] != 0 ) {//check below column.
+        t2d[row][col] = t2d[row +1 ][col - 1];
+      }
+    }
+    if( col + 1 < resolutionx) { //Check next columns for selected spots.
+
+      if( row > 0 &&  t2d[row -1 ][col + 1] != 0 ) {
+        t2d[row][col] =  t2d[row -1 ][col + 1];
+      }
+
+      if( t2d[row][col +1] != 0 ) {
+        t2d[row][col] = t2d[row][col +1];
+      }
+
+      if( row + 1 < resolutiony && t2d[row +1 ][col + 1] != 0 ) {//check below column.
+        t2d[row][col] = t2d[row +1 ][col + 1];
+      }
+    }
+
+    if( row > 0 && t2d[row -1 ][col] != 0 ) {
+      t2d[row][col] =  t2d[row -1 ][col];
+    }
+
+    if( row + 1 < resolutiony && t2d[row +1 ][col] != 0 ) {
+      t2d[row][col] = t2d[row +1 ][col];
+    }
+
+    if( t2d[row][col] == 0 ) {
+      console.log("previous count value:"+ this._spotsCount[0]);
+      this.spotsCount = this._spotsCount[0] + 1 ;//Otherwise, increment spots count and return value.
+      console.log("next count value:"+ this._spotsCount[0]);
+
+      t2d[row][col] = this._spotsCount[0];
+
+      console.log("Setting value as "+this._spotsCount[0]+" as there are no selected nieghbors")
+    }
+
+    this.tilesData2D = t2d;
+    return this._tilesData2D[0][row][col];
+  }
+
   public async finishMarkingSpots() {
-    if( this.tilesData.find((element) => element == 1) ) {
+    if( this.tilesData.find((element) => element == 1) ) {//There is at-least one spot selected.
+
+      console.log("Here's the tilesdata after spot selection:");
+      console.log(this._tilesData[0]);
+
       const dBlocks:displayBlocks = this.UIdisplayBlocks;
       this.validTileSpotsMarkingDone = true;
       await this.redis.set(this.myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
@@ -986,7 +1074,7 @@ Devvit.addCustomPostType({
         width = {`${sizexBlocks}px`}
         height = {`${sizeyBlocks}px`}
 
-        backgroundColor={ game.UIdisplayBlocks.spots && pixel == 1 ? 'rgba(255, 69, 0, 0.9)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
+        backgroundColor={ game.UIdisplayBlocks.spots && pixel != 0 ? 'rgba(255, 69, 0, 0.9)' : 'transparent'}   border={ game.UIdisplayBlocks.spots && !game.validTileSpotsMarkingDone? "thin":"none"} borderColor='rgba(28, 29, 28, 0.70)'>
       </hstack>
     ));
 
