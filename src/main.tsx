@@ -494,7 +494,24 @@ class SpottitGame {
   }
 */
   public async finishMarkingSpots() {
-    if( this.tilesData.find((element) => element == 1) ) {//There is at-least one spot selected.
+      if( this.tilesData.find((element) => element == 1) ) {//There is at-least one spot selected.
+
+      console.log("Before data:");
+      console.log(this.tilesData2D);
+      var targetNumber = 2;
+      var searchNumber = 1;
+      for( var i=0; i< this.tilesData2D.length; i++ ) {
+          for( var j = 0; j< this.tilesData2D[i].length; j ++ ) {
+            if( this.tilesData2D[i][j] == 1 ) {
+              floodFillRecursive(this.tilesData2D, i, j, targetNumber, searchNumber);
+              targetNumber ++;
+            }   
+          }
+      }
+      this.tilesData = this.tilesData2D.flat();
+
+      console.log("Before data:");
+      console.log(this.tilesData2D);
 
       console.log("Here's the tilesdata after spot selection:");
       console.log(this._tilesData[0]);
@@ -1325,4 +1342,19 @@ async function getRedditPostComments(context: TriggerContext| ContextAPIClients,
   })
   .all();
   return comments;
+}
+
+function floodFillRecursive(grid:number[][], x:number, y:number, targetNumber:number, searchNumber:number) {
+  if (x < 0 || x >= grid.length || y < 0
+      || y >= grid[0].length ||
+      grid[x][y] !== searchNumber) {
+      return;
+  }
+
+  grid[x][y] = targetNumber;
+
+  floodFillRecursive(grid, x + 1, y, targetNumber, searchNumber);
+  floodFillRecursive(grid, x - 1, y, targetNumber, searchNumber);
+  floodFillRecursive(grid, x, y + 1, targetNumber, searchNumber);
+  floodFillRecursive(grid, x, y - 1, targetNumber, searchNumber);
 }
