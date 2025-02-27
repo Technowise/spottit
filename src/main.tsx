@@ -262,7 +262,6 @@ class SpottitGame {
           }
         }
         this._spotsCount[0] =  new Set(this._tilesData[0]).size - 1;
-        console.log("Total spots: "+this._spotsCount );
         return array2d;
       }
 
@@ -365,6 +364,10 @@ class SpottitGame {
     return this._tilesData[0];
   }
 
+  public get tilesData2D() {
+    return this._tilesData2D[0];
+  }
+
   public get validTileSpotsMarkingDone() {
     return this._validTileSpotsMarkingDone[0];
   }
@@ -372,11 +375,10 @@ class SpottitGame {
   public get myPostId() {
     return this._myPostId[0];
   }
-/*
+
   public get spotsCount() {
     return this._spotsCount[0];
   }
-  */
 
   public get currentUsername() {
     return this._currentUsername[0];
@@ -401,73 +403,96 @@ class SpottitGame {
 
   public async toggleValidTile( index=0 ) {
     var d = this.tilesData;
+    const row = Math.floor( index / resolutionx );
+    const col = index - (row * resolutionx);
+    var d2d = this.tilesData2D;
     if( d[index] != 0 ) {
       d[index] = 0;
+      d2d[row][col] = 0;
     }
     else {
-      d[index] = this.getSpotCount(index);//1;
+      d[index] = 1;
+      d2d[row][col] = 1;
     }
+    this.tilesData2D = d2d;
     this.tilesData = d;
   }
 
+  /*
   public getSpotCount( index:number ) {//Check the nieghboring tiles, and use their number if found. Otherwise increment spotsCount and use that number.
     const row = Math.floor( index / resolutionx );
     const col = index - (row * resolutionx);
-    console.log("clicked row: "+row);
-    console.log("clicked column: "+col);
 
     var t2d = this._tilesData2D[0];
+    var valueToSet = 999;
+    var nieghboringSelectedIndexes = [];
 
     if( col > 0 ) {//Check previous columns for selected spots.
       if( row > 0 &&  t2d[row -1 ][col - 1] != 0 ) {
-        t2d[row][col] = t2d[row -1 ][col - 1];
+        nieghboringSelectedIndexes.push([row -1, col-1]);
       }
 
       if( t2d[row][col -1] != 0 ) {
-        t2d[row][col] = t2d[row][col -1];
+        nieghboringSelectedIndexes.push([row, col-1]);
       }
 
       if( row + 1 < resolutiony && t2d[row +1 ][col - 1] != 0 ) {//check below column.
-        t2d[row][col] = t2d[row +1 ][col - 1];
+        nieghboringSelectedIndexes.push([row+1, col-1]);
       }
     }
     if( col + 1 < resolutionx) { //Check next columns for selected spots.
 
       if( row > 0 &&  t2d[row -1 ][col + 1] != 0 ) {
-        t2d[row][col] =  t2d[row -1 ][col + 1];
+        nieghboringSelectedIndexes.push([row-1, col+1]);
       }
 
       if( t2d[row][col +1] != 0 ) {
-        t2d[row][col] = t2d[row][col +1];
+        nieghboringSelectedIndexes.push([row, col+1]);
       }
 
       if( row + 1 < resolutiony && t2d[row +1 ][col + 1] != 0 ) {//check below column.
-        t2d[row][col] = t2d[row +1 ][col + 1];
+        nieghboringSelectedIndexes.push([row+1, col+1]);
       }
     }
 
     if( row > 0 && t2d[row -1 ][col] != 0 ) {
-      t2d[row][col] =  t2d[row -1 ][col];
+      nieghboringSelectedIndexes.push([row-1, col]);
     }
 
     if( row + 1 < resolutiony && t2d[row +1 ][col] != 0 ) {
-      t2d[row][col] = t2d[row +1 ][col];
+      nieghboringSelectedIndexes.push([row+1, col]);
+    }
+    console.log(nieghboringSelectedIndexes);
+    console.log("Nieghboring tile count:"+nieghboringSelectedIndexes.length+" values:");
+    for(var i = 0; i < nieghboringSelectedIndexes.length; i++ ) {//find minimum among nieghboring tiles.
+      console.log("value at Index: x:"+ nieghboringSelectedIndexes[i][0] + "y:"+ [nieghboringSelectedIndexes[i][1]] +" is: ");
+      console.log(t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]]);
+
+      if( t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]] < valueToSet ) {
+        valueToSet = t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]];
+      }
     }
 
-    if( t2d[row][col] == 0 ) {
-      console.log("previous count value:"+ this._spotsCount[0]);
-      this.spotsCount = this._spotsCount[0] + 1 ;//Otherwise, increment spots count and return value.
+    if( nieghboringSelectedIndexes.length > 0 ) {
+      for(var i = 0; i < nieghboringSelectedIndexes.length; i++ ) {
+        t2d[ nieghboringSelectedIndexes[i][0] ][ nieghboringSelectedIndexes[i][1] ] = valueToSet;
+      }
+      t2d[row][col] = valueToSet
+    }
+    else {//It is not having any connecting tile, so increment and set new number for the tile.
+      //this.spotsCount = Math.max(...this._tilesData[0]) + 1 ;
+      this.spotsCount = Math.max(...t2d.flat()) + 1 ;
       console.log("next count value:"+ this._spotsCount[0]);
-
       t2d[row][col] = this._spotsCount[0];
-
-      console.log("Setting value as "+this._spotsCount[0]+" as there are no selected nieghbors")
+      console.log("Setting value as "+this._spotsCount[0]+" as there are no selected nieghbors");
+      console.log("Now tiles2d looks like this: ");
+      console.log(t2d);
     }
 
     this.tilesData2D = t2d;
     return this._tilesData2D[0][row][col];
   }
-
+*/
   public async finishMarkingSpots() {
     if( this.tilesData.find((element) => element == 1) ) {//There is at-least one spot selected.
 
@@ -1042,7 +1067,7 @@ Devvit.addCustomPostType({
       else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone )  {
+      else if( game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Aborted && game.validTileSpotsMarkingDone )  {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
@@ -1117,7 +1142,7 @@ Devvit.addCustomPostType({
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
             
-            {game.userGameStatus.state == gameStates.Started? <><button icon="show" size="small" onPress={() => {
+            {game.userGameStatus.state == gameStates.Started || game.userGameStatus.state == gameStates.Paused ? <><button icon="show" size="small" onPress={() => {
               game.currPage = Pages.Picture;
               const dBlocks:displayBlocks = game.UIdisplayBlocks;
               dBlocks.confirmShowSpot = true;
