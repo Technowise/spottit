@@ -19,6 +19,7 @@ type leaderBoard = {
   username: string;
   timeInSeconds: number;
   attempts: number;
+  foundSpots: number;
 };
 
 type displayBlocks = {
@@ -56,6 +57,7 @@ type UserGameState = {
   startTime: number;
   counter: number;
   attemptsCount: number;
+  foundSpots: number;
 }
 
 type webviewSpotDataRequest = {
@@ -135,12 +137,13 @@ class SpottitGame {
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
-        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0 };
+        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0, foundSpots: 0 };
         const redisValues = await this.redis.mGet([ this.redisKeyPrefix+'GameAborted', 
                                                     this.redisKeyPrefix+'StartTime', 
-                                                    this.redisKeyPrefix+'AttemptsCount']);
+                                                    this.redisKeyPrefix+'AttemptsCount', 
+                                                    this.redisKeyPrefix+'FoundSpots']);
 
-        if(redisValues && redisValues.length == 3)
+        if(redisValues && redisValues.length >= 3)
         {
           if (redisValues[0] === 'true' ) {
             UGS.state = gameStates.Aborted;
@@ -158,6 +161,15 @@ class SpottitGame {
               UGS.state = gameStates.Aborted;
             }
           }
+
+          if ( redisValues.length > 3 && redisValues[3] && redisValues[3].length > 0 ) {
+            var foundSpots = parseInt(redisValues[3]);
+            UGS.foundSpots = foundSpots;
+          }
+          else {
+            UGS.foundSpots = 0;
+          }
+
         }
         return UGS;
       }
@@ -208,6 +220,7 @@ class SpottitGame {
           usg.state = gameStates.Finished;
           usg.counter = records[i].timeInSeconds;
           usg.attemptsCount = records[i].attempts;
+          usg.foundSpots = records[i].foundSpots;
           this.userGameStatus = usg;
         }
       }
@@ -234,6 +247,12 @@ class SpottitGame {
             if( redditPostComments[i].authorName == 'spottit-game' && redditPostComments[i].body.includes("\"tilesData\"") ) {
               try {
                 var pa = JSON.parse(redditPostComments[i].body);
+
+                if( pa.hasOwnProperty("leaderboard") && ! pa.leaderboard[0].hasOwnProperty("foundSpots") ) {
+                  for( i=0; i< pa.leaderboard.length; i++ ) {
+                    pa.leaderboard.foundSpots = 1;//Default to 1 spot found when the attribute is missing.
+                  }
+                }
                 const postArchive = pa as postArchive;
                 console.log("Retrieved tiles-data from comment json");
                 this.imageURL = postArchive.image;
@@ -584,7 +603,11 @@ class SpottitGame {
       const ugs = this.userGameStatus;    
       ugs.state = gameStates.Finished;
       const leaderBoardArray = this.leaderBoardRec;
-      const leaderBoardObj:leaderBoard  = { username:this.currentUsername, timeInSeconds: this.userGameStatus.counter, attempts: this.userGameStatus.attemptsCount };
+      const leaderBoardObj:leaderBoard  = { username:this.currentUsername, 
+                                            timeInSeconds: this.userGameStatus.counter, 
+                                            attempts: this.userGameStatus.attemptsCount,
+                                            foundSpots: this.userGameStatus.foundSpots
+                                           };
       leaderBoardArray.push(leaderBoardObj);
       leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
       this.leaderBoardRec = leaderBoardArray;
@@ -1311,7 +1334,10 @@ async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, 
     for (const key in previousLeaderBoard) {
       const redisLBObj = JSON.parse(previousLeaderBoard[key]);
       if( redisLBObj.username ) {
-        const lbObj:leaderBoard = {username: redisLBObj.username, timeInSeconds:redisLBObj.timeInSeconds, attempts: redisLBObj.attempts };
+        const lbObj:leaderBoard = { username: redisLBObj.username, 
+                                    timeInSeconds:redisLBObj.timeInSeconds, 
+                                    attempts: redisLBObj.attempts,
+                                    foundSpots: redisLBObj.foundSpots?redisLBObj.foundSpots:1 };
         leaderBoardRecords.push(lbObj);
       }
     }
@@ -1324,6 +1350,13 @@ async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, 
       if( redditPostComments[i].authorName == 'spottit-game' && redditPostComments[i].body.includes("\"leaderboard\"") ) {
         try {
           var pa = JSON.parse(redditPostComments[i].body);
+
+          if( pa.hasOwnProperty("leaderboard") && ! pa.leaderboard[0].hasOwnProperty("foundSpots") ) {
+            for( i=0; i< pa.leaderboard.length; i++ ) {
+              pa.leaderboard.foundSpots = 1;//Default to 1 spot found when the attribute is missing.
+            }
+          }
+          
           const postArchive = pa as postArchive;
           console.log("Retrieved leaderboard records from comment json");
           return postArchive.leaderboard;
