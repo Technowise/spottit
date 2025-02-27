@@ -136,11 +136,15 @@ function appendTilesOverlay(tilesData) {
       t.className = "tile";
       t.style.top = y * tilesData.sizey + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
       t.style.left = x * tilesData.sizex + 'px';
-      if ( tile == 1 ) {
+      if ( tile != 0 ) {
         t.addEventListener("doubletap", sendSuccessfulSpotting);//TODO: Show indication of the spot selected in UI.
-      } 
+        t.row = y;
+        t.col = x;
+      }
       else {
         t.addEventListener("doubletap", sendFailedSpotting);//TODO: Show indication of the spot selected in UI.
+        t.row = y;
+        t.col = x;
       }
       tc.appendChild(t);
     }
@@ -150,24 +154,29 @@ function appendTilesOverlay(tilesData) {
   zoomistImageContainer.appendChild(div);
 }
 
-function sendSuccessfulSpotting() {
-
+function sendSuccessfulSpotting(event) {
   if( !zoomed && !successfullySpotted ) {
     window.parent.postMessage({
-      type: 'succcessfulSpotting'
+      type: 'succcessfulSpotting',
+      row: event.currentTarget.row,
+      col: event.currentTarget.col,
       }, '*');
       successfullySpotted = true;
   } else if ( successfullySpotted) {
     window.parent.postMessage({
-      type: 'repeatSucccessfulSpotting'
+      type: 'repeatSucccessfulSpotting',
+      row: event.currentTarget.row,
+      col: event.currentTarget.col,
       }, '*');
   }
 }
 
-function sendFailedSpotting() {
+function sendFailedSpotting(event) {
   if( !zoomed && !successfullySpotted ) {
     window.parent.postMessage({
-      type: 'unsucccessfulSpotting'
+      type: 'unsucccessfulSpotting',
+      row: event.currentTarget.row,
+      col: event.currentTarget.col,
       }, '*');
   }
 }

@@ -58,8 +58,10 @@ type UserGameState = {
   attemptsCount: number;
 }
 
-type webviewDataRequest = {
+type webviewSpotDataRequest = {
   type: string;
+  row: number;
+  col: number;
 };
 
 type postArchive = {
@@ -764,8 +766,7 @@ Devvit.addCustomPostType({
     const { mount, postMessage } = useWebView({
       url: 'zoom-view.html',
       onMessage: async (message) => {
-
-        const wr = message as webviewDataRequest;
+        const wr = message as webviewSpotDataRequest;
         const tilesData = {
         data: game.tilesData,
         resolutionx : resolutionx,
@@ -785,9 +786,12 @@ Devvit.addCustomPostType({
           }});
         }
         else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
+          console.log("Spot location row: "+wr.row+" col: "+wr.col );
+          console.log("Found spot number: "+ game.tilesData2D[wr.row][wr.col])
           await game.finishGame();
         }
         else if(wr.type == "unsucccessfulSpotting") {
+          console.log("Wrong Spot location row: "+wr.row+" col: "+wr.col )
           await game.incrementAttempts();
         }
         else if(wr.type == "startOrResumeGame") {
