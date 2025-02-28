@@ -159,12 +159,7 @@ function appendTilesOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting(event) {
-  console.log("Yamma, yamma, succesful spotting was called.");
   if( !zoomed) {
-    console.log("foundSpots:");
-    console.log(ugs.foundSpots);
-    console.log("New spot found:");
-    console.log(event.currentTarget.spotNumber);
     
     if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
       window.parent.postMessage({
@@ -174,22 +169,17 @@ function sendSuccessfulSpotting(event) {
         }, '*');
 
         ugs.foundSpots.push( event.currentTarget.spotNumber );
-        console.log("Now we've found "+ugs.foundSpots.length+" Spots");
         if( ugs.foundSpots.length ==  spotsCount) {
           successfullySpottedAllSpots = true;
         }
         
     } else  {
-      console.log("Repeat found was called!");
       window.parent.postMessage({
         type: 'repeatSucccessfulSpotting',
         row: event.currentTarget.row,
         col: event.currentTarget.col,
         }, '*');
     }
-  }
-  else {
-    console.log("Oh boy, zoomed is true right now!");
   }
 }
 
