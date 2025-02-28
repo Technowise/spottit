@@ -261,8 +261,7 @@ class SpottitGame {
 
     this._spotsCount = context.useState(
       () => {
-        var sc =  new Set(this._tilesData[0]).size - 1;
-        console.log("Setting Spots count to: "+sc );
+        var sc = new Set(this._tilesData[0]).size - 1;
         return sc;
      }
     );
@@ -439,86 +438,8 @@ class SpottitGame {
     this.tilesData = d;
   }
 
-  /*
-  public getSpotCount( index:number ) {//Check the nieghboring tiles, and use their number if found. Otherwise increment spotsCount and use that number.
-    const row = Math.floor( index / resolutionx );
-    const col = index - (row * resolutionx);
-
-    var t2d = this._tilesData2D[0];
-    var valueToSet = 999;
-    var nieghboringSelectedIndexes = [];
-
-    if( col > 0 ) {//Check previous columns for selected spots.
-      if( row > 0 &&  t2d[row -1 ][col - 1] != 0 ) {
-        nieghboringSelectedIndexes.push([row -1, col-1]);
-      }
-
-      if( t2d[row][col -1] != 0 ) {
-        nieghboringSelectedIndexes.push([row, col-1]);
-      }
-
-      if( row + 1 < resolutiony && t2d[row +1 ][col - 1] != 0 ) {//check below column.
-        nieghboringSelectedIndexes.push([row+1, col-1]);
-      }
-    }
-    if( col + 1 < resolutionx) { //Check next columns for selected spots.
-
-      if( row > 0 &&  t2d[row -1 ][col + 1] != 0 ) {
-        nieghboringSelectedIndexes.push([row-1, col+1]);
-      }
-
-      if( t2d[row][col +1] != 0 ) {
-        nieghboringSelectedIndexes.push([row, col+1]);
-      }
-
-      if( row + 1 < resolutiony && t2d[row +1 ][col + 1] != 0 ) {//check below column.
-        nieghboringSelectedIndexes.push([row+1, col+1]);
-      }
-    }
-
-    if( row > 0 && t2d[row -1 ][col] != 0 ) {
-      nieghboringSelectedIndexes.push([row-1, col]);
-    }
-
-    if( row + 1 < resolutiony && t2d[row +1 ][col] != 0 ) {
-      nieghboringSelectedIndexes.push([row+1, col]);
-    }
-    console.log(nieghboringSelectedIndexes);
-    console.log("Nieghboring tile count:"+nieghboringSelectedIndexes.length+" values:");
-    for(var i = 0; i < nieghboringSelectedIndexes.length; i++ ) {//find minimum among nieghboring tiles.
-      console.log("value at Index: x:"+ nieghboringSelectedIndexes[i][0] + "y:"+ [nieghboringSelectedIndexes[i][1]] +" is: ");
-      console.log(t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]]);
-
-      if( t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]] < valueToSet ) {
-        valueToSet = t2d[ nieghboringSelectedIndexes[i][0] ][nieghboringSelectedIndexes[i][1]];
-      }
-    }
-
-    if( nieghboringSelectedIndexes.length > 0 ) {
-      for(var i = 0; i < nieghboringSelectedIndexes.length; i++ ) {
-        t2d[ nieghboringSelectedIndexes[i][0] ][ nieghboringSelectedIndexes[i][1] ] = valueToSet;
-      }
-      t2d[row][col] = valueToSet
-    }
-    else {//It is not having any connecting tile, so increment and set new number for the tile.
-      //this.spotsCount = Math.max(...this._tilesData[0]) + 1 ;
-      this.spotsCount = Math.max(...t2d.flat()) + 1 ;
-      console.log("next count value:"+ this._spotsCount[0]);
-      t2d[row][col] = this._spotsCount[0];
-      console.log("Setting value as "+this._spotsCount[0]+" as there are no selected nieghbors");
-      console.log("Now tiles2d looks like this: ");
-      console.log(t2d);
-    }
-
-    this.tilesData2D = t2d;
-    return this._tilesData2D[0][row][col];
-  }
-*/
   public async finishMarkingSpots() {
       if( this.tilesData.find((element) => element == 1) ) {//There is at-least one spot selected.
-
-      console.log("Before data:");
-      console.log(this.tilesData2D);
       var targetNumber = 2;
       var searchNumber = 1;
       for( var i=0; i< this.tilesData2D.length; i++ ) {
@@ -530,13 +451,6 @@ class SpottitGame {
           }
       }
       this.tilesData = this.tilesData2D.flat();
-
-      console.log("Before data:");
-      console.log(this.tilesData2D);
-
-      console.log("Here's the tilesdata after spot selection:");
-      console.log(this._tilesData[0]);
-
       const dBlocks:displayBlocks = this.UIdisplayBlocks;
       this.validTileSpotsMarkingDone = true;
       await this.redis.set(this.myPostId+'ValidTileSpotsMarkingDone', 'true', {expiration: expireTime});
@@ -577,16 +491,18 @@ class SpottitGame {
       }
     }
     this.leaderBoardRec = updatedLeaderBoardArray;
-    await this.redis.hDel(this.myPostId, [username]);
+    var removedItemsCount = await this.redis.hDel(this.myPostId, [username]);
+    await this.redis.del( this.myPostId + username +'GameAborted');
+    await this.redis.del( this.myPostId + username +'StartTime');
+    await this.redis.del( this.myPostId + username +'AttemptsCount'); 
+    await this.redis.del( this.myPostId + username +'FoundSpots');
   }
 
   public async alertRepeatSpotting() {
-    if( this.userGameStatus.state == gameStates.Finished ) {
-      this._context.ui.showToast({
-        text: "You have already found the spot, close this dialog to check-out the Leaderboard!",
-        appearance: 'success',
-      });
-    }
+    this._context.ui.showToast({
+      text: "You have already found this spot, there are still "+(this.spotsCount - this.userGameStatus.foundSpots.length)+" other spot(s) to be found.",
+      appearance: 'neutral',
+    });
   }
   
   public async addFoundSpot(spotNumber:number) {
@@ -600,7 +516,7 @@ class SpottitGame {
     }
     else {
       this._context.ui.showToast({
-        text: "You have found "+ugs.foundSpots.length+" out of "+this.spotsCount+" spots in "+this.userGameStatus.counter+" seconds",
+        text: "✅ You have found "+ugs.foundSpots.length+" out of "+this.spotsCount+" spots. Time: "+this.userGameStatus.counter+" seconds",
         appearance: 'success',
       });
       await this.updateLeaderboard();
@@ -646,7 +562,7 @@ class SpottitGame {
 
   public async finishGame() {
     this._context.ui.showToast({
-      text: "Congratulations! You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds, ",
+      text: "Congratulations! 🎊 You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds, ",
       appearance: 'success',
     });
 
@@ -851,12 +767,9 @@ Devvit.addCustomPostType({
           }});
         }
         else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
-          console.log("Spot location row: "+wr.row+" col: "+wr.col );
-          console.log("Found spot number: "+ game.tilesData2D[wr.row][wr.col]);
           await game.addFoundSpot( game.tilesData2D[wr.row][wr.col] );
         }
         else if(wr.type == "unsucccessfulSpotting") {
-          console.log("Wrong Spot location row: "+wr.row+" col: "+wr.col )
           await game.incrementAttempts();
         }
         else if(wr.type == "startOrResumeGame") {

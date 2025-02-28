@@ -139,6 +139,7 @@ function appendTilesOverlay(tilesData) {
       t.style.top = y * tilesData.sizey + 'px';//hard-coded height in pixel temporarily. TODO: Use webview for spot selection, and use higher pixel density/resolution with whole numbers.
       t.style.left = x * tilesData.sizex + 'px';
       if ( tile != 0 ) {
+        
         t.addEventListener("doubletap", sendSuccessfulSpotting);//TODO: Show indication of the spot selected in UI.
         t.row = y;
         t.col = x;
@@ -158,7 +159,13 @@ function appendTilesOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting(event) {
+  console.log("Yamma, yamma, succesful spotting was called.");
   if( !zoomed) {
+    console.log("foundSpots:");
+    console.log(ugs.foundSpots);
+    console.log("New spot found:");
+    console.log(event.currentTarget.spotNumber);
+    
     if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
       window.parent.postMessage({
         type: 'succcessfulSpotting',
@@ -173,12 +180,16 @@ function sendSuccessfulSpotting(event) {
         }
         
     } else  {
+      console.log("Repeat found was called!");
       window.parent.postMessage({
         type: 'repeatSucccessfulSpotting',
         row: event.currentTarget.row,
         col: event.currentTarget.col,
         }, '*');
     }
+  }
+  else {
+    console.log("Oh boy, zoomed is true right now!");
   }
 }
 
