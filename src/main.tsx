@@ -19,7 +19,7 @@ type leaderBoard = {
   username: string;
   timeInSeconds: number;
   attempts: number;
-  foundSpots: number;
+  foundSpots: number[];
 };
 
 type displayBlocks = {
@@ -57,7 +57,7 @@ type UserGameState = {
   startTime: number;
   counter: number;
   attemptsCount: number;
-  foundSpots: number;
+  foundSpots: number[];
 }
 
 type webviewSpotDataRequest = {
@@ -137,7 +137,7 @@ class SpottitGame {
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
-        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0, foundSpots: 0 };
+        const UGS:UserGameState = {state: gameStates.NotStarted, startTime: 0, counter: 0, attemptsCount: 0, foundSpots: [] };
         const redisValues = await this.redis.mGet([ this.redisKeyPrefix+'GameAborted', 
                                                     this.redisKeyPrefix+'StartTime', 
                                                     this.redisKeyPrefix+'AttemptsCount', 
@@ -163,11 +163,11 @@ class SpottitGame {
           }
 
           if ( redisValues.length > 3 && redisValues[3] && redisValues[3].length > 0 ) {
-            var foundSpots = parseInt(redisValues[3]);
-            UGS.foundSpots = foundSpots;
+            var foundSpots = redisValues[3];
+            UGS.foundSpots = foundSpots.split(",").map(Number);
           }
           else {
-            UGS.foundSpots = 0;
+            UGS.foundSpots = [];
           }
 
         }
@@ -250,7 +250,7 @@ class SpottitGame {
 
                 if( pa.hasOwnProperty("leaderboard") && ! pa.leaderboard[0].hasOwnProperty("foundSpots") ) {
                   for( i=0; i< pa.leaderboard.length; i++ ) {
-                    pa.leaderboard.foundSpots = 1;//Default to 1 spot found when the attribute is missing.
+                    pa.leaderboard.foundSpots = [1];//Default to 1 spot found when the attribute is missing.
                   }
                 }
                 const postArchive = pa as postArchive;
@@ -588,6 +588,60 @@ class SpottitGame {
       });
     }
   }
+  
+  public async addFoundSpot(spotNumber:number) {
+    var ugs = this.userGameStatus;
+    ugs.foundSpots.push(spotNumber);
+    this.userGameStatus = ugs;
+    await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
+
+    if( ugs.foundSpots.length == this.spotsCount ) {
+      this.finishGame();
+    }
+    else {
+      this._context.ui.showToast({
+        text: "You have found "+ugs.foundSpots.length+" out of "+this.spotsCount+" spots. Time: "+this.userGameStatus.counter+" seconds",
+        appearance: 'success',
+      });
+      await this.updateLeaderboard();
+    }
+  }
+
+  public async updateLeaderboard() {
+    const ugs = this.userGameStatus;
+    var foundEntry = false;
+
+    if( ugs.foundSpots.length == this.spotsCount ) {
+      ugs.state = gameStates.Finished;
+    }
+    const leaderBoardArray = this.leaderBoardRec;
+
+    for(var i =0; i < leaderBoardArray.length; i++ ) { //Search and update existing leaderboard entry if found.
+      if(leaderBoardArray[i].username == this.currentUsername) {
+        foundEntry = true;
+        leaderBoardArray[i].foundSpots = ugs.foundSpots;
+        leaderBoardArray[i].timeInSeconds =  ugs.counter;
+      }
+    }
+
+    const leaderBoardObj:leaderBoard  = { username:this.currentUsername, 
+      timeInSeconds: this.userGameStatus.counter, 
+      attempts: this.userGameStatus.attemptsCount,
+      foundSpots: this.userGameStatus.foundSpots
+    };
+    await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
+    await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
+
+    if( !foundEntry ) { //Create fresh entry in leaderboard:
+      leaderBoardArray.push(leaderBoardObj);
+    }
+
+    leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);//TODO: Sorting first on spots found count, then on time.
+    this.leaderBoardRec = leaderBoardArray;
+
+    this.userGameStatus = ugs;
+    await this.createPostArchiveCommentJob();//Add/update archive comment.
+  }
 
   public async finishGame() {
     this._context.ui.showToast({
@@ -600,21 +654,7 @@ class SpottitGame {
     });
 
     if( !this.gameArchived ) {
-      const ugs = this.userGameStatus;    
-      ugs.state = gameStates.Finished;
-      const leaderBoardArray = this.leaderBoardRec;
-      const leaderBoardObj:leaderBoard  = { username:this.currentUsername, 
-                                            timeInSeconds: this.userGameStatus.counter, 
-                                            attempts: this.userGameStatus.attemptsCount,
-                                            foundSpots: this.userGameStatus.foundSpots
-                                           };
-      leaderBoardArray.push(leaderBoardObj);
-      leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-      this.leaderBoardRec = leaderBoardArray;
-      await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
-      await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
-      this.userGameStatus = ugs;
-      await this.createPostArchiveCommentJob();//Add/update archive comment.
+      await this.updateLeaderboard();
     }
   
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
@@ -810,8 +850,9 @@ Devvit.addCustomPostType({
         }
         else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
           console.log("Spot location row: "+wr.row+" col: "+wr.col );
-          console.log("Found spot number: "+ game.tilesData2D[wr.row][wr.col])
-          await game.finishGame();
+          console.log("Found spot number: "+ game.tilesData2D[wr.row][wr.col]);
+          await game.addFoundSpot( game.tilesData2D[wr.row][wr.col] );
+          //await game.finishGame();
         }
         else if(wr.type == "unsucccessfulSpotting") {
           console.log("Wrong Spot location row: "+wr.row+" col: "+wr.col )
@@ -1337,7 +1378,7 @@ async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, 
         const lbObj:leaderBoard = { username: redisLBObj.username, 
                                     timeInSeconds:redisLBObj.timeInSeconds, 
                                     attempts: redisLBObj.attempts,
-                                    foundSpots: redisLBObj.foundSpots?redisLBObj.foundSpots:1 };
+                                    foundSpots: redisLBObj.foundSpots?redisLBObj.foundSpots.split(",").map(Number):[1] };
         leaderBoardRecords.push(lbObj);
       }
     }
@@ -1353,7 +1394,7 @@ async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, 
 
           if( pa.hasOwnProperty("leaderboard") && ! pa.leaderboard[0].hasOwnProperty("foundSpots") ) {
             for( i=0; i< pa.leaderboard.length; i++ ) {
-              pa.leaderboard.foundSpots = 1;//Default to 1 spot found when the attribute is missing.
+              pa.leaderboard.foundSpots = [1];//Default to 1 spot found when the attribute is missing.
             }
           }
           
