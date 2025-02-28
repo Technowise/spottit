@@ -846,7 +846,8 @@ Devvit.addCustomPostType({
                             ugs: game.userGameStatus, 
                             userIsAuthor: game.userIsAuthor, 
                             validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
-                            playersCount: game.leaderBoardRec.length
+                            playersCount: game.leaderBoardRec.length,
+                            spotsCount: game.spotsCount,
           }});
         }
         else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.

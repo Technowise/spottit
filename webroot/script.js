@@ -28,7 +28,8 @@ var ugs = null;
 var userIsAuthor = false;
 var validTileSpotsMarkingDone = false;
 var playersCount = 0;
-var successfullySpotted = false;
+var successfullySpottedAllSpots = false;
+var spotsCount = 0;
 
 function loadImage() {
   if ( zoomistImageContainer.childElementCount == 0 ){
@@ -63,6 +64,7 @@ window.addEventListener('message', (event) => {
       userIsAuthor = dataObj.userIsAuthor;
       validTileSpotsMarkingDone = dataObj.validTileSpotsMarkingDone;
       playersCount = dataObj.playersCount;
+      spotsCount = dataObj.spotsCount;
       imageAdded = true;
 
       zoomistContainer.style.display = "block";
@@ -140,6 +142,7 @@ function appendTilesOverlay(tilesData) {
         t.addEventListener("doubletap", sendSuccessfulSpotting);//TODO: Show indication of the spot selected in UI.
         t.row = y;
         t.col = x;
+        t.spotNumber = tile;
       }
       else {
         t.addEventListener("doubletap", sendFailedSpotting);//TODO: Show indication of the spot selected in UI.
@@ -155,24 +158,32 @@ function appendTilesOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting(event) {
-  if( !zoomed && !successfullySpotted ) {
-    window.parent.postMessage({
-      type: 'succcessfulSpotting',
-      row: event.currentTarget.row,
-      col: event.currentTarget.col,
-      }, '*');
-      successfullySpotted = true;
-  } else if ( successfullySpotted) {
-    window.parent.postMessage({
-      type: 'repeatSucccessfulSpotting',
-      row: event.currentTarget.row,
-      col: event.currentTarget.col,
-      }, '*');
+  if( !zoomed) {
+    if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
+      window.parent.postMessage({
+        type: 'succcessfulSpotting',
+        row: event.currentTarget.row,
+        col: event.currentTarget.col,
+        }, '*');
+
+        ugs.foundSpots.push( event.currentTarget.spotNumber );
+        console.log("Now we've found "+ugs.foundSpots.length+" Spots");
+        if( ugs.foundSpots.length ==  spotsCount) {
+          successfullySpottedAllSpots = true;
+        }
+        
+    } else  {
+      window.parent.postMessage({
+        type: 'repeatSucccessfulSpotting',
+        row: event.currentTarget.row,
+        col: event.currentTarget.col,
+        }, '*');
+    }
   }
 }
 
 function sendFailedSpotting(event) {
-  if( !zoomed && !successfullySpotted ) {
+  if( !zoomed && !successfullySpottedAllSpots ) {
     window.parent.postMessage({
       type: 'unsucccessfulSpotting',
       row: event.currentTarget.row,
