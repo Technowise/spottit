@@ -210,6 +210,14 @@ class SpottitGame {
       return dBlocks;
     });
 
+    this._imageURL = context.useState(async () => {
+      const imageURL = await context.redis.get(this.myPostId+'imageURL');
+      if (imageURL) {
+        return imageURL;
+      }
+      return "";
+    });
+
     this._tilesData = context.useState(
       async () => {
         const tilesDataStr = await context.redis.get(this.myPostId+'TilesDataArray');
@@ -277,14 +285,6 @@ class SpottitGame {
         }
       }
       return records;
-    });
-
-    this._imageURL = context.useState(async () => {
-      const imageURL = await context.redis.get(this.myPostId+'imageURL');
-      if (imageURL) {
-        return imageURL;
-      }
-      return "";
     });
 
     this._isGameArchived = context.useState(async () => {
