@@ -33,9 +33,9 @@ Help page describes details on how to play the game and the app's features.
   * Migrated to new web-view which allows to go full screen on mobile app, and wide modal view in desktop.
 * 0.0.21
   * Post archival comment made to be added/updated after every new entry to leaderboard.
-
+* 0.0.23
+  * Add feature to be able to mark and find multiple-spots in the same picture.
 
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)
-
