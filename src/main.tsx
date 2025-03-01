@@ -509,7 +509,6 @@ class SpottitGame {
     var ugs = this.userGameStatus;
     ugs.foundSpots.push(spotNumber);
     this.userGameStatus = ugs;
-    await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
 
     if( ugs.foundSpots.length == this.spotsCount ) {
       this.finishGame();
@@ -519,8 +518,14 @@ class SpottitGame {
         text: "✅ You have found "+ugs.foundSpots.length+" out of "+this.spotsCount+" spots. Time: "+this.userGameStatus.counter+" seconds",
         appearance: 'success',
       });
+    }
+
+    if( !this.gameArchived ) {
       await this.updateLeaderboard();
     }
+    await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
+
+
   }
 
   public async updateLeaderboard() {
@@ -561,19 +566,12 @@ class SpottitGame {
   }
 
   public async finishGame() {
+
     this._context.ui.showToast({
       text: "Congratulations! 🎊 You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds, ",
       appearance: 'success',
     });
 
-    this._context.ui.webView.postMessage("ZoomistWebview", {type: "messageOverlay", 
-      counter: this.userGameStatus.counter
-    });
-
-    if( !this.gameArchived ) {
-      await this.updateLeaderboard();
-    }
-  
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
     dBlocks.picture = true;
