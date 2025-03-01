@@ -111,7 +111,6 @@ class SpottitGame {
         }
         this.userGameStatus = ugs;
       }
-
     }, 1000);
 
     this._myPostId = context.useState(async () => {
@@ -169,7 +168,6 @@ class SpottitGame {
           else {
             UGS.foundSpots = [];
           }
-
         }
         return UGS;
       }
@@ -500,7 +498,7 @@ class SpottitGame {
 
   public async alertRepeatSpotting() {
     this._context.ui.showToast({
-      text: "You have already found this spot, there are still "+(this.spotsCount - this.userGameStatus.foundSpots.length)+" other spot(s) to be found.",
+      text: "You have already found this spot, you need to find "+(this.spotsCount - this.userGameStatus.foundSpots.length)+" other spot(s).",
       appearance: 'neutral',
     });
   }
@@ -524,8 +522,6 @@ class SpottitGame {
       await this.updateLeaderboard();
     }
     await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
-
-
   }
 
   public async updateLeaderboard() {
@@ -558,7 +554,7 @@ class SpottitGame {
     await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
     await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
 
-    leaderBoardArray.sort((a, b) =>  b.foundSpots.length - a.foundSpots.length || a.timeInSeconds - b.timeInSeconds);//TODO: Sorting first on spots found count, then on time.
+    leaderBoardArray.sort((a, b) =>  b.foundSpots.length - a.foundSpots.length || a.timeInSeconds - b.timeInSeconds);
     this.leaderBoardRec = leaderBoardArray;
 
     this.userGameStatus = ugs;
@@ -568,7 +564,7 @@ class SpottitGame {
   public async finishGame() {
 
     this._context.ui.showToast({
-      text: "Congratulations! 🎊 You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds, ",
+      text: "Congratulations! 🎊 You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds! ",
       appearance: 'success',
     });
 
@@ -673,7 +669,7 @@ class SpottitGame {
     dBlocks.zoomView = true;
     this.UIdisplayBlocks = dBlocks;
 
-    this._context.ui.showToast({text: `Double-tap/double-click on the spot when you find!`,
+    this._context.ui.showToast({text: `Double-tap/click on the spot when you find!`,
       appearance: 'neutral'});
   }
 
