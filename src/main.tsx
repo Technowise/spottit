@@ -812,15 +812,18 @@ Devvit.addCustomPostType({
                 Leaderboard
             </text>
           </hstack>
-          <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%">
-            <text style="heading" size="small" color="black" width="15%">
-             Rank
+          <hstack padding="small" width="100%" backgroundColor="#c0c0c0" height="8%" alignment='center'>
+            <text style="heading" size="small" color="black" width="10%" alignment="center">
+              Rank
             </text>
-            <text style="heading" size="small" color="black" width="50%">
-             Username
+            <text style="heading" size="small" color="black" width="40%" alignment="center">
+              Username
             </text>
-            <text style="heading" size="small" color="black" width="30%" alignment="start">
-              Total Time
+            <text style="heading" size="small" color="black" width="15%" alignment="center">
+              Spots
+            </text>
+            <text style="heading" size="small" color="black" width="25%" alignment="center">
+              Time
             </text>
           </hstack>
           <vstack width="100%" padding="small" height="70%">
@@ -845,14 +848,17 @@ Devvit.addCustomPostType({
     );
 
     const LeaderBoardRow = ({row, index, game}: {row: leaderBoard, index: number,  game: SpottitGame }): JSX.Element => {
-      return (<hstack padding="xsmall">
-        <text style="body" size="small" weight="bold" color="black" width="15%">
+      return (<hstack padding="xsmall" alignment="middle center">
+        <text style="body" size="small" weight="bold" color="black" width="10%" alignment="center">
           {index}
         </text>
-        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="50%">
+        <text style="body" size="small" weight="bold" color="black" onPress={() => openUserPage(row.username)} width="40%" alignment="center">
           {row.username}
         </text>
-        <text style="body" size="small" color="black" width="30%" alignment="start">
+        <text style="body" size="small" color="black" alignment="center" width="15%">
+          {row.foundSpots.length}
+        </text>
+        <text style="body" size="small" color="black" width="25%" alignment="center">
           &nbsp;{row.timeInSeconds}
         </text>
         { game.userIsAuthor ? <text size="small" color="black" onPress={() => game.deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
