@@ -553,7 +553,7 @@ class SpottitGame {
     await this.redis.hSet(this.myPostId, { [this.currentUsername]: JSON.stringify(leaderBoardObj) });
     await this.redis.expire(this.myPostId, redisExpireTimeSeconds);
 
-    leaderBoardArray.sort((a, b) => a.timeInSeconds - b.timeInSeconds);//TODO: Sorting first on spots found count, then on time.
+    leaderBoardArray.sort((a, b) =>  b.foundSpots.length - a.foundSpots.length || a.timeInSeconds - b.timeInSeconds);//TODO: Sorting first on spots found count, then on time.
     this.leaderBoardRec = leaderBoardArray;
 
     this.userGameStatus = ugs;
@@ -941,10 +941,11 @@ Devvit.addCustomPostType({
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
+      <text color="white" size="medium" weight="bold"> {game.leaderBoardRec.length > 1 ? game.leaderBoardRec.length+" people have already spotted this.":"Only a few have spotted this." }</text>
       <spacer size="small"/>
-
       <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
+      <spacer size="small"/>
+      <text width="300px" size="medium" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
     </vstack>
     );
   
@@ -1302,7 +1303,7 @@ async function getLeaderboardRecords(context:TriggerContext| ContextAPIClients, 
         leaderBoardRecords.push(lbObj);
       }
     }
-    leaderBoardRecords.sort((a, b) =>  a.timeInSeconds - b.timeInSeconds );
+    leaderBoardRecords.sort((a, b) =>  b.foundSpots.length - a.foundSpots.length || a.timeInSeconds - b.timeInSeconds );
     return leaderBoardRecords;
   }
   else {//try to get leaderbard records from the archive in comment.
