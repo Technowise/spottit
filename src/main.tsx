@@ -568,6 +568,11 @@ class SpottitGame {
       appearance: 'success',
     });
 
+    const redditComment = await this._context.reddit.submitComment({
+      id: `${this.myPostId}`,
+      text: "I found the spot(s) in "+this.userGameStatus.counter+" seconds! Try beating that in this [Spottit game](https://reddit.com/r/Spottit)."
+    });
+
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
     dBlocks.picture = true;
@@ -712,7 +717,10 @@ Devvit.addSchedulerJob({
     const imageUrl = await context.redis.get(myPostId+'imageURL');
 
     if ( (tilesDataStr && tilesDataStr.length > 0 ) && (imageUrl && imageUrl.length > 0 ) ) {
-      var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: await getLeaderboardRecords(context, myPostId)};
+      var leaderboard = await getLeaderboardRecords(context, myPostId);
+      //Archive only first 80 records in leaderboard as there limitation on the reddit comment size.
+      leaderboard = leaderboard.slice(0, 80);
+      var pa: postArchive = {image: imageUrl , tilesData: tilesDataStr, leaderboard: leaderboard};
       var archiveCommentJson = JSON.stringify(pa);
       const archiveCommentId = await context.redis.get(myPostId+'archiveCommentId');
 
@@ -935,11 +943,11 @@ Devvit.addCustomPostType({
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-      <text color="white" size="medium" weight="bold"> {game.leaderBoardRec.length > 1 ? game.leaderBoardRec.length+" people have already spotted this.":"Only a few have spotted this." }</text>
+      <text width="300px" size="medium" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to spot!</text>
       <spacer size="small"/>
       <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
       <spacer size="small"/>
-      <text width="300px" size="medium" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to find the spot!</text>
+      <text color="white" size="medium" weight="bold"> {game.leaderBoardRec.length > 1 ? game.leaderBoardRec.length+" people have already spotted this.":"Only a few have spotted this." }</text>
     </vstack>
     );
   

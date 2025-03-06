@@ -35,6 +35,9 @@ Help page describes details on how to play the game and the app's features.
   * Post archival comment made to be added/updated after every new entry to leaderboard.
 * 0.0.23
   * Add feature to be able to mark and find multiple-spots in the same picture.
+* 0.0.25
+  * Limit number of leaderboard entries in post archive comment(due to limitation in comment size).
+  * Add comment to post on successful spotting by user.
 
 ## Links
 ### Demo
