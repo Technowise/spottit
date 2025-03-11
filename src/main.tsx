@@ -1,4 +1,4 @@
-import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView } from '@devvit/public-api';
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView, SettingScope } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
 Devvit.configure({redditAPI: true, redis: true });
 
@@ -568,10 +568,15 @@ class SpottitGame {
       appearance: 'success',
     });
 
-    const redditComment = await this._context.reddit.submitComment({
-      id: `${this.myPostId}`,
-      text: "I found the spot(s) in "+this.userGameStatus.counter+" seconds! Try beating that in this [Spottit game](https://reddit.com/r/Spottit)."
-    });
+    const commentAddOnBehalf = await this._context.settings.get('commentAddOnBehalf');
+    const commentMinimumTimeInSeconds:number = await this._context.settings.get('commentMinimumTimeInSeconds')?? 60;
+
+    if( commentAddOnBehalf && this.userGameStatus.counter < commentMinimumTimeInSeconds ) {
+      const redditComment = await this._context.reddit.submitComment({
+        id: `${this.myPostId}`,
+        text: "I found the spot(s) in "+this.userGameStatus.counter+" seconds! Try beating that in this [Spottit game](https://reddit.com/r/Spottit)."
+      });
+    }
 
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
     dBlocks.zoomView = false;
@@ -695,6 +700,23 @@ class SpottitGame {
     }
   }
 }
+
+Devvit.addSettings([
+  {
+    type: 'boolean',
+    name: 'commentAddOnBehalf',
+    label: 'Add comment to post on behalf of the participant on completion of the game',
+    scope: SettingScope.Installation, 
+    defaultValue: false
+  },
+  {
+    type: 'number',
+    name: 'commentMinimumTimeInSeconds',
+    label: 'Minimum time in seconds to include in a comment(on behalf of participant)',
+    scope: SettingScope.Installation,
+    defaultValue: 60
+  },
+]);
 
 Devvit.addTrigger({
   event: 'PostDelete',

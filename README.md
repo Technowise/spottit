@@ -38,6 +38,8 @@ Help page describes details on how to play the game and the app's features.
 * 0.0.25
   * Limit number of leaderboard entries in post archive comment(due to limitation in comment size).
   * Add comment to post on successful spotting by user.
+* 0.0.26
+  * Make comment on successful spotting configurable, along with time duration setting.
 
 ## Links
 ### Demo
