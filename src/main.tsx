@@ -105,9 +105,15 @@ class SpottitGame {
       if( this.userGameStatus.state == gameStates.Started && this.userGameStatus.attemptsCount < maxWrongAttempts) {
         var timeNow = new Date().getTime();
         const ugs = this.userGameStatus;
-        ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
-        if( ugs.counter > 1800 ) {//Max out the counter at 30 minutes.
-          ugs.counter = 1800
+
+        if( timeNow > ugs.startTime ) {
+          ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+          if( ugs.counter > 1800 ) {//Max out the counter at 30 minutes.
+            ugs.counter = 1800
+          }
+        }
+        else {//default to 1 in case somehow timeNow is not greater than startTime.
+          ugs.counter = 1;
         }
         this.userGameStatus = ugs;
       }
@@ -503,13 +509,18 @@ class SpottitGame {
     });
   }
   
-  public async addFoundSpot(spotNumber:number) {
+  public async addFoundSpot(spotNumber:number) {//Returns true if game is finished, false otherwise.
     var ugs = this.userGameStatus;
-    ugs.foundSpots.push(spotNumber);
-    this.userGameStatus = ugs;
+    var isGameFinished = false;
 
-    if( ugs.foundSpots.length == this.spotsCount ) {
+    if( ! ugs.foundSpots.includes(spotNumber) ) {
+      ugs.foundSpots.push(spotNumber);
+      this.userGameStatus = ugs;
+    }
+
+    if( ugs.foundSpots.length >= this.spotsCount ) {
       this.finishGame();
+      isGameFinished = true;
     }
     else {
       this._context.ui.showToast({
@@ -522,6 +533,7 @@ class SpottitGame {
       await this.updateLeaderboard();
     }
     await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
+    return isGameFinished;
   }
 
   public async updateLeaderboard() {
@@ -532,6 +544,10 @@ class SpottitGame {
       ugs.state = gameStates.Finished;
     }
     const leaderBoardArray = this.leaderBoardRec;
+
+    if( ugs.counter <= 0 ) {
+      ugs.counter = 1;
+    }
 
     for(var i =0; i < leaderBoardArray.length; i++ ) { //Search and update existing leaderboard entry if found.
       if(leaderBoardArray[i].username == this.currentUsername) {
@@ -767,9 +783,9 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
-    const { mount, postMessage } = useWebView({
+    const { mount, unmount, postMessage } = useWebView({
       url: 'zoom-view.html',
-      onMessage: async (message) => {
+      onMessage: async (message, webView) => {
         const wr = message as webviewSpotDataRequest;
         const tilesData = {
         data: game.tilesData,
@@ -791,7 +807,10 @@ Devvit.addCustomPostType({
           }});
         }
         else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
-          await game.addFoundSpot( game.tilesData2D[wr.row][wr.col] );
+          const isGameFinished = await game.addFoundSpot( game.tilesData2D[wr.row][wr.col]);
+          if( isGameFinished ) {
+            webView.unmount();
+          }
         }
         else if(wr.type == "unsucccessfulSpotting") {
           await game.incrementAttempts();

@@ -40,6 +40,8 @@ Help page describes details on how to play the game and the app's features.
   * Add comment to post on successful spotting by user.
 * 0.0.26
   * Make comment on successful spotting configurable, along with time duration setting.
+* 0.0.27
+  * Update devvit version(to 0.11.11), unmount web-view after game is finished, changes to fix possibility of negative time in leaderboard.
 
 ## Links
 ### Demo
