@@ -153,7 +153,7 @@ class SpottitGame {
           if (redisValues[0] === 'true' ) {
             UGS.state = gameStates.Aborted;
           }
-          else
+
           if (redisValues[1] && redisValues[1].length > 0 ) {
             UGS.startTime = parseInt(redisValues[1]);
             UGS.state = gameStates.Paused;
@@ -994,7 +994,7 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot(s) in {game.userGameStatus.counter} seconds! Click on Leaderboard button to see time of others.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot(s) in {game.userGameStatus.counter} seconds!  Total of {game.leaderBoardRec.length} people have spotted this. Click on Leaderboard button to see time of others.</text>
         <spacer size="medium"/>
       </vstack>
     );
