@@ -95,12 +95,12 @@ window.addEventListener('message', (event) => {
         bodyElement.style.backgroundImage = "";
       });
   
-      appendTilesOverlay(tilesData);
-  
-      window.parent.postMessage({
-        type: 'startOrResumeGame'
-      }, '*');
-
+      if( ugs.state != gameStates.Aborted ) {
+        appendTilesOverlay(tilesData);
+        window.parent.postMessage({
+          type: 'startOrResumeGame'
+        }, '*');
+      }
 
   }
   else if( type == "messageOverlay" ) {

@@ -1,5 +1,6 @@
-1. For archived posts (older than 1 month), show proper indication of the expired post. Inform user that the entry would not be included in the leaderboard.
-2. Reduce the tile-size to 1/2 of the present size so that we can mark things that are closer by as separate spots, and make provision to mark spots within the web-view (instead of the present blocks view)
-3. Allow moderators to delete faulty entries in leader-board.
-4. Make it impossible to have a negative score.
-5. Find out how number of spots found sometimes goes greater than the actual number of spots.
+1. After user aborts game, if refresh the view, it again shows 'Resume' option in the game. Make sure to not show Resume option once it is aborted. - Done
+2. For archived posts (older than 1 month), show proper indication of the expired post. Inform user that the entry would not be included in the leaderboard.
+3. Reduce the tile-size to 1/2 of the present size so that we can mark things that are closer by as separate spots, and make provision to mark spots within the web-view (instead of the present blocks view)
+4. Allow moderators to delete faulty entries in leader-board.
+5. Make it impossible to have a negative score. - Done
+6. Find out how number of spots found sometimes goes greater than the actual number of spots.

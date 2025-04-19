@@ -150,11 +150,11 @@ class SpottitGame {
 
         if(redisValues && redisValues.length >= 3)
         {
-          if (redisValues[0] === 'true' ) {
+          if (redisValues[0] && redisValues[0] == 'true' ) {
             UGS.state = gameStates.Aborted;
           }
 
-          if (redisValues[1] && redisValues[1].length > 0 ) {
+          if (redisValues[1] && redisValues[1].length > 0  && UGS.state != gameStates.Aborted ) {
             UGS.startTime = parseInt(redisValues[1]);
             UGS.state = gameStates.Paused;
           }
@@ -823,7 +823,7 @@ Devvit.addCustomPostType({
         }
       },
       onUnmount: async () => {
-        if( game.userGameStatus.state !== gameStates.Finished ) {
+        if( game.userGameStatus.state !== gameStates.Finished && game.userGameStatus.state !== gameStates.Aborted ) {
           game.pauseGame();
         }
         game.setHomepage();
@@ -999,6 +999,16 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
+    const GameAbortedBlock = ({ game }: { game: SpottitGame }) => (
+      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have aborted this game. Click on the 'Show' button to show the spot, or click on 'View' button to view picture in expanded view.</text>
+        <spacer size="small"/>
+        <button appearance="success" onPress={mount} >View!</button>
+        <spacer size="medium"/>
+      </vstack>
+    );
+    
+
     const MaxAttemptsReachedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 60)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
@@ -1107,25 +1117,21 @@ Devvit.addCustomPostType({
 
     function getPictureOverlayBlock( game:SpottitGame) {
 
-      if( game.UIdisplayBlocks.spots ) {
-        return null;
-      } 
+      if (game.userGameStatus.state == gameStates.Aborted ) {
+        return <GameAbortedBlock game={game} />;
+      }
       else if( game.UIdisplayBlocks.confirmShowSpot ) {
         return <ConfirmShowSpotBlock game={game}/>;
       }
       else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state != gameStates.Finished && game.userGameStatus.state != gameStates.Aborted && game.validTileSpotsMarkingDone )  {
+      else if( game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone )  {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
         return <GameFinishedBlock game={game} />;
       }
-      else if (game.userGameStatus.state == gameStates.Aborted && game.userGameStatus.attemptsCount == maxWrongAttempts ) {//TODO: remove or change this block.
-        return <MaxAttemptsReachedBlock game={game} />;
-      }
-
       return null;
     }
 
