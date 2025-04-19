@@ -44,6 +44,11 @@ Help page describes details on how to play the game and the app's features.
   * Update devvit version(to 0.11.11), unmount web-view after game is finished, changes to fix possibility of negative time in leaderboard.
 * 0.0.28
   * Bug fix: Fix issue with if/else statement while fetching the user game status.
+* 0.0.29
+  * Bug fix 1: Addressed issue with wrongfully registering double-tap(spotting) when users are dragging/moving the image or zooming the image.
+  * Bug fix 2: Addressed issue with wrongfully showing 'Resume' option (on refreshing the post) after user has aborted the game.
+  * Enhancement: Provide a way to return to expanded web-view after the game is finished or aborted by clicking on 'View' button.
+  * Library update: Updated zoomist library to latest available version.
 
 ## Links
 ### Demo

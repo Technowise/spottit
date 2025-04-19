@@ -17,8 +17,7 @@ function detectDoubleTap(doubleTapMs) {
   }
 }
 
-// initialize the new event
-document.addEventListener('pointerup', detectDoubleTap(500));
+document.addEventListener('pointerup', detectDoubleTap(500));// initialize the new event
 
 const zoomistImageContainer = document.getElementById("zoomist-image");
 const zoomistContainer = document.getElementById("zoomist-container");
@@ -42,6 +41,11 @@ function loadImage() {
 loadImage();
 var imageAdded = false;
 var zoomed = false;
+var dragged = false;
+var zoomTimeoutId = null;
+var dragTimeoutId = null;
+var dragStartX = 0;
+var dragStartY = 0;
 
 const gameStates = Object.freeze( {
   NotStarted: 0,
@@ -66,7 +70,6 @@ window.addEventListener('message', (event) => {
       playersCount = dataObj.playersCount;
       spotsCount = dataObj.spotsCount;
       imageAdded = true;
-
       zoomistContainer.style.display = "block";
   
       const image = document.createElement("img");
@@ -81,13 +84,43 @@ window.addEventListener('message', (event) => {
         initScale: 1,
         slider: true, 
         zoomer: true,
-        zoomRatio: 0.08
+        zoomRatio: 0.1
       });
   
       zoomist.on('zoom', (zoomist, scale) => {
         zoomed = true;
-        //setTimeout(function() { zoomed = false;}, 1200);//set it to false after possible double-click time has passed.
-        setTimeout(function() { zoomed = false;}, 1800);//set it to false after possible double-click time has passed.
+        if( zoomTimeoutId !== null ) {
+          clearTimeout(zoomTimeoutId);
+        }
+
+        zoomTimeoutId = setTimeout(function() { zoomed = false;}, 1800);//set it to false after possible double-click time has passed.
+      });
+
+      zoomist.on('dragStart', (zoomist, transform, event) => {
+        dragStartX = transform.x;
+        dragStartY = transform.y;
+      });
+
+      zoomist.on('dragEnd', (zoomist, transform, event) => {
+        if(transform.x != dragStartX || transform.y != dragStartY) {
+          dragged = true;
+          if( dragTimeoutId !== null ) {
+            clearTimeout(dragTimeoutId);
+          }
+  
+          dragTimeoutId = setTimeout(function() { 
+            dragged = false;
+            dragStartX = 0;
+            dragStartY = 0;
+          }, 1800);//set it to false after possible drag time has passed.
+
+        }
+        else {
+          dragged = false;
+          dragStartX = 0;
+          dragStartY = 0;
+        }
+
       });
 
       zoomist.on('ready', (zoomist) => {
@@ -95,7 +128,7 @@ window.addEventListener('message', (event) => {
         bodyElement.style.backgroundImage = "";
       });
   
-      if( ugs.state != gameStates.Aborted ) {
+      if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished ) {
         appendTilesOverlay(tilesData);
         window.parent.postMessage({
           type: 'startOrResumeGame'
@@ -159,7 +192,7 @@ function appendTilesOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting(event) {
-  if( !zoomed) {
+  if( !zoomed && !dragged && !successfullySpottedAllSpots ) {
     
     if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
       window.parent.postMessage({
@@ -184,7 +217,7 @@ function sendSuccessfulSpotting(event) {
 }
 
 function sendFailedSpotting(event) {
-  if( !zoomed && !successfullySpottedAllSpots ) {
+  if( !zoomed && !dragged && !successfullySpottedAllSpots ) {
     window.parent.postMessage({
       type: 'unsucccessfulSpotting',
       row: event.currentTarget.row,

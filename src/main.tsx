@@ -994,21 +994,22 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot(s) in {game.userGameStatus.counter} seconds!  Total of {game.leaderBoardRec.length} people have spotted this. Click on Leaderboard button to see time of others.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot(s) in {game.userGameStatus.counter} seconds!  Total of {game.leaderBoardRec.length} people have spotted this. Click on 'Leaderboard' to see time of others, or click on 'View!' to view picture in expanded view.</text>
+        <spacer size="small"/>
+        <button appearance="success" onPress={mount} >View!</button>
         <spacer size="medium"/>
       </vstack>
     );
 
     const GameAbortedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have aborted this game. Click on the 'Show' button to show the spot, or click on 'View' button to view picture in expanded view.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have aborted this game. Click on the 'Show' to show the spot, or click on 'View' to view picture in expanded view.</text>
         <spacer size="small"/>
         <button appearance="success" onPress={mount} >View!</button>
         <spacer size="medium"/>
       </vstack>
     );
-    
-
+  
     const MaxAttemptsReachedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 60)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
