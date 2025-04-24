@@ -49,6 +49,8 @@ Help page describes details on how to play the game and the app's features.
   * Bug fix 2: Addressed issue with wrongfully showing 'Resume' option (on refreshing the post) after user has aborted the game.
   * Enhancement: Provide a way to return to expanded web-view after the game is finished or aborted by clicking on 'View' button.
   * Library update: Updated zoomist library to latest available version.
+* 0.0.30
+  * Bug fix: Android users were not able to click on spot to register, so made a small fix to address it.
 
 ## Links
 ### Demo

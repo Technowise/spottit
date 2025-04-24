@@ -192,7 +192,7 @@ function appendTilesOverlay(tilesData) {
 }
 
 function sendSuccessfulSpotting(event) {
-  if( !zoomed && !dragged && !successfullySpottedAllSpots ) {
+  if( !zoomed && !successfullySpottedAllSpots ) {
     
     if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
       window.parent.postMessage({
@@ -217,7 +217,7 @@ function sendSuccessfulSpotting(event) {
 }
 
 function sendFailedSpotting(event) {
-  if( !zoomed && !dragged && !successfullySpottedAllSpots ) {
+  if( !zoomed && !successfullySpottedAllSpots ) {
     window.parent.postMessage({
       type: 'unsucccessfulSpotting',
       row: event.currentTarget.row,
