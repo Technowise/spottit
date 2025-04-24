@@ -1,6 +1,8 @@
 import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView, SettingScope } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
-Devvit.configure({redditAPI: true, redis: true });
+Devvit.configure({redditAPI: true, 
+                  redis: true,
+                  userActions: false });
 
 const resolutionx = 22;
 const resolutiony = 34;
@@ -588,10 +590,13 @@ class SpottitGame {
     const commentMinimumTimeInSeconds:number = await this._context.settings.get('commentMinimumTimeInSeconds')?? 60;
 
     if( commentAddOnBehalf && this.userGameStatus.counter < commentMinimumTimeInSeconds ) {
+      //Disabling comment on behalf for this version. Planning to release it on next release.
+      /*
       const redditComment = await this._context.reddit.submitComment({
         id: `${this.myPostId}`,
         text: "I found the spot(s) in "+this.userGameStatus.counter+" seconds! Try beating that in this [Spottit game](https://reddit.com/r/Spottit)."
       });
+      */
     }
 
     const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
