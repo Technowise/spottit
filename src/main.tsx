@@ -95,6 +95,7 @@ class SpottitGame {
   private _redisKeyPrefix: string;
   private _isGameArchived: UseStateResult<boolean>;
   private _spotsCount: UseStateResult<number>;
+  private _isUserSubscribed:UseStateResult<boolean>;
 
   constructor( context: ContextAPIClients, postId: string) {
     this._context = context;
@@ -128,6 +129,14 @@ class SpottitGame {
     this._currentUsername = context.useState(async () => {
       const currentUserName = await context.reddit.getCurrentUsername() ??'defaultUsername';
       return currentUserName;
+    });
+
+    this._isUserSubscribed = context.useState(async () => {
+      var subscribedStatus = await this.redis.get(this._currentUsername+'IsSubscribed');
+      if( subscribedStatus && subscribedStatus == "true" ) {
+        return true;
+      }
+      return false;
     });
 
     this._redisKeyPrefix = this.myPostId + this.currentUsername;
@@ -340,6 +349,11 @@ class SpottitGame {
     this._validTileSpotsMarkingDone[1](value);
   }
 
+  public set isUserSubscribed(value: boolean) {
+    this._isUserSubscribed[0] = value;
+    this._isUserSubscribed[1](value);
+  }
+
   public set userGameStatus(value: UserGameState) {
     this._userGameStatus[0] = value;
     this._userGameStatus[1](value);
@@ -408,6 +422,10 @@ class SpottitGame {
 
   public get currentUsername() {
     return this._currentUsername[0];
+  }
+
+  public get isUserSubscribed() {
+    return this._isUserSubscribed[0];
   }
 
   private isScreenWide() {
@@ -660,6 +678,13 @@ class SpottitGame {
 
   public showHelpBlock() {
     this.currPage = Pages.Help;
+  }
+
+  public async subscribeUserToSub() {
+    await this._context.reddit.subscribeToCurrentSubreddit();
+    await this.redis.set(this._currentUsername+'IsSubscribed', "true", {expiration: expireTime});
+    this.isUserSubscribed = true;
+    this._context.ui.showToast('Subscribed to Spottit!')
   }
   
   public showLeaderboardBlock() {
@@ -999,9 +1024,16 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have found the spot(s) in {game.userGameStatus.counter} seconds!  Total of {game.leaderBoardRec.length} people have spotted this. Click on 'Leaderboard' to see time of others, or click on 'View!' to view picture in expanded view.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Congrats! You have found the spot(s) in {game.userGameStatus.counter} seconds.</text>
         <spacer size="small"/>
-        <button appearance="success" onPress={mount} >View!</button>
+        {game.isUserSubscribed != true ? <>
+          <text size="large" weight="bold" wrap color="white"> Please join us for daily visual puzzles! </text>
+          <spacer size="small"/>
+          <button appearance="success" onPress={() => game.subscribeUserToSub()} >Join!</button>
+          <spacer size="small"/>
+        </>:""}
+
+        <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
         <spacer size="medium"/>
       </vstack>
     );

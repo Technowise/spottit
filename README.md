@@ -51,6 +51,8 @@ Help page describes details on how to play the game and the app's features.
   * Library update: Updated zoomist library to latest available version.
 * 0.0.30
   * Bug fix: Android users were not able to click on spot to register, so made a small fix to address it.
+* 0.0.31
+  * Enhancement: Added 'Join' button for users to subscribe to the subreddit after playing the game.
 
 ## Links
 ### Demo
