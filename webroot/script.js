@@ -128,7 +128,7 @@ window.addEventListener('message', (event) => {
         bodyElement.style.backgroundImage = "";
       });
   
-      if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished ) {
+      if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished && !userIsAuthor ) {
         appendTilesOverlay(tilesData);
         window.parent.postMessage({
           type: 'startOrResumeGame'

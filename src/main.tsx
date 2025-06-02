@@ -944,9 +944,10 @@ Devvit.addCustomPostType({
       <hstack>
         <vstack width="300px" alignment='center middle'>
           <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
-            Your Spottit post is ready for others to play. There have been {game.leaderBoardRec.length} players who have taken part so far.
+             {game.leaderBoardRec.length} players who have taken part in your Spottit post so far.
           </text>
           <spacer size="medium"/>
+          <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
         </vstack>
       </hstack>
     </vstack>
@@ -957,7 +958,7 @@ Devvit.addCustomPostType({
         <vstack  width="320px" height="45%" alignment="center middle" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
           <hstack padding="small">
             <text style="heading" size="large" weight='bold' alignment="middle center" width="270px" color='black'>
-                &nbsp;Are you sure to abort & view?
+                &nbsp;Are you sure to give up?
             </text>
             <button size="small" icon='close' width="34px" onPress={() => {
                 const dBlocks:displayBlocks = game.UIdisplayBlocks;
@@ -967,7 +968,7 @@ Devvit.addCustomPostType({
           </hstack>
           <vstack height="80%" width="100%" padding="medium">
             <text wrap color='black'>
-            Are you sure you want to view the spot? This will abort this game and you will not be able to resume again.
+            Are you sure you want give up and view the spot? You will not be able to resume again.
             </text>
             <spacer size="large" />
             <hstack alignment="bottom center" width="100%">
@@ -1014,11 +1015,26 @@ Devvit.addCustomPostType({
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-      <text width="300px" size="medium" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to spot!</text>
+      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to spot!</text>
       <spacer size="small"/>
-      <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume!" : "Start!"}  </button>
+      <hstack>
+        <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume" : "Start!"}  </button>
+        <spacer size="small"/>
+        { game.userGameStatus.state == gameStates.Paused ? <button onPress={() => {
+              game.currPage = Pages.Picture;
+              const dBlocks:displayBlocks = game.UIdisplayBlocks;
+              dBlocks.confirmShowSpot = true;
+              game.UIdisplayBlocks = dBlocks;
+            }} appearance="destructive">I give up!</button> : ""} 
+      </hstack>
       <spacer size="small"/>
-      <text color="white" size="medium" weight="bold"> {game.leaderBoardRec.length > 1 ? game.leaderBoardRec.length+" people have already spotted this.":"Only a few have spotted this." }</text>
+      {game.userGameStatus.state == gameStates.Paused ? <>
+          <spacer size="small"/>
+          <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
+          <spacer size="small"/>
+          <button appearance="success" onPress={() => game.subscribeUserToSub()} >Join!</button>
+        </>:<text color="white" size="medium" weight="bold"> {game.leaderBoardRec.length > 1 ? game.leaderBoardRec.length+" people have already spotted this.":"Only a few have spotted this." }</text>}
+
     </vstack>
     );
   
@@ -1027,12 +1043,11 @@ Devvit.addCustomPostType({
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Congrats! You have found the spot(s) in {game.userGameStatus.counter} seconds.</text>
         <spacer size="small"/>
         {game.isUserSubscribed != true ? <>
-          <text size="large" weight="bold" wrap color="white"> Please join us for daily visual puzzles! </text>
+          <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
           <spacer size="small"/>
           <button appearance="success" onPress={() => game.subscribeUserToSub()} >Join!</button>
           <spacer size="small"/>
         </>:""}
-
         <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
         <spacer size="medium"/>
       </vstack>
@@ -1040,9 +1055,16 @@ Devvit.addCustomPostType({
 
     const GameAbortedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have aborted this game. Click on the 'Show' to show the spot, or click on 'View' to view picture in expanded view.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >You have aborted this game.</text>
         <spacer size="small"/>
-        <button appearance="success" onPress={mount} >View!</button>
+        <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
+        <spacer size="medium"/>
+        {game.isUserSubscribed != true ? <>
+          <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
+          <spacer size="small"/>
+          <button appearance="success" onPress={() => game.subscribeUserToSub()} >Join!</button>
+          <spacer size="small"/>
+        </>:""}
         <spacer size="medium"/>
       </vstack>
     );
@@ -1155,16 +1177,16 @@ Devvit.addCustomPostType({
 
     function getPictureOverlayBlock( game:SpottitGame) {
 
-      if (game.userGameStatus.state == gameStates.Aborted ) {
+      if ( game.userGameStatus.state == gameStates.Aborted && !game.UIdisplayBlocks.spots ) {
         return <GameAbortedBlock game={game} />;
       }
       else if( game.UIdisplayBlocks.confirmShowSpot ) {
         return <ConfirmShowSpotBlock game={game}/>;
       }
-      else if( game.userIsAuthor && game.validTileSpotsMarkingDone ) {
+      else if( game.userIsAuthor && game.validTileSpotsMarkingDone && !game.UIdisplayBlocks.spots ) {
         return  <InfoBlock game={game} />;
       }
-      else if( game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone )  {
+      else if( !game.userIsAuthor && game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted  )  {
         return <GameStartBlock game={game}/>;
       }
       else if (game.userGameStatus.state == gameStates.Finished) {
