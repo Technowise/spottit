@@ -10,7 +10,7 @@ const sizex = 23.445;
 const sizey = 20.45;
 const sizexBlocks = 15.59;
 const sizeyBlocks = 16;
-const redisExpireTimeSeconds = 2592000;//30 days in seconds.
+const redisExpireTimeSeconds = 3888000;//45 days in seconds.
 const maxWrongAttempts = 30;
 let dateNow = new Date();
 const redisExpireTimeMilliseconds = redisExpireTimeSeconds * 1000;
@@ -482,6 +482,12 @@ class SpottitGame {
       await this.redis.set(this.myPostId+'TilesDataArray', redisDataStr, {expiration: expireTime});
       dBlocks.spots = false;
       this.UIdisplayBlocks = dBlocks;
+
+      this._context.ui.showToast({
+        text: "Your post is now ready for others to play! ✅",
+        appearance: 'success',
+      });
+
     }
     else {
       this._context.ui.showToast({
@@ -684,7 +690,7 @@ class SpottitGame {
     await this._context.reddit.subscribeToCurrentSubreddit();
     await this.redis.set(this._currentUsername+'IsSubscribed', "true", {expiration: expireTime});
     this.isUserSubscribed = true;
-    this._context.ui.showToast('Subscribed to Spottit!')
+    this._context.ui.showToast('Subscribed! ✅')
   }
   
   public showLeaderboardBlock() {
@@ -944,7 +950,7 @@ Devvit.addCustomPostType({
       <hstack>
         <vstack width="300px" alignment='center middle'>
           <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'>
-             {game.leaderBoardRec.length} players who have taken part in your Spottit post so far.
+             {game.leaderBoardRec.length} players have taken part in this Spottit post.
           </text>
           <spacer size="medium"/>
           <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
@@ -966,7 +972,7 @@ Devvit.addCustomPostType({
                 game.UIdisplayBlocks = dBlocks;
               }}></button>
           </hstack>
-          <vstack height="80%" width="100%" padding="medium">
+          <vstack height="70%" width="100%" padding="medium">
             <text wrap color='black'>
             Are you sure you want give up and view the spot? You will not be able to resume again.
             </text>
@@ -1015,17 +1021,25 @@ Devvit.addCustomPostType({
 
     const GameStartBlock = ({ game }: { game: SpottitGame }) => (
     <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-      <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click '{ game.userGameStatus.state == gameStates.Paused ? "Resume!" :"Start!"}' when you're ready to spot!</text>
+
+        {game.userGameStatus.state == gameStates.NotStarted ? <>
+          <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Click 'Start!' when you're ready!</text>
+          <spacer size="small"/>
+          <button appearance="success" onPress={mount}>Start!</button>
+        </>:""}
+
       <spacer size="small"/>
       <hstack>
-        <button appearance="success" onPress={mount} > { game.userGameStatus.state == gameStates.Paused ? "Resume" : "Start!"}  </button>
         <spacer size="small"/>
-        { game.userGameStatus.state == gameStates.Paused ? <button onPress={() => {
+        { game.userGameStatus.state == gameStates.Paused ? <> 
+              <button appearance="caution" onPress={mount}>Resume</button>
+              <spacer size="small"/>
+              <button onPress={() => {
               game.currPage = Pages.Picture;
               const dBlocks:displayBlocks = game.UIdisplayBlocks;
               dBlocks.confirmShowSpot = true;
               game.UIdisplayBlocks = dBlocks;
-            }} appearance="destructive">I give up!</button> : ""} 
+            }} appearance="destructive">I give up!</button> </>: ""} 
       </hstack>
       <spacer size="small"/>
       {game.userGameStatus.state == gameStates.Paused ? <>
@@ -1041,13 +1055,14 @@ Devvit.addCustomPostType({
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
         <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Congrats! You have found the spot(s) in {game.userGameStatus.counter} seconds.</text>
-        <spacer size="small"/>
+        <spacer size="medium"/>
         {game.isUserSubscribed != true ? <>
           <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
           <spacer size="small"/>
           <button appearance="success" onPress={() => game.subscribeUserToSub()} >Join!</button>
           <spacer size="small"/>
         </>:""}
+        <spacer size="small"/>
         <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
         <spacer size="medium"/>
       </vstack>
@@ -1253,12 +1268,7 @@ Devvit.addCustomPostType({
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
             
-            {game.userGameStatus.state == gameStates.Started || game.userGameStatus.state == gameStates.Paused ? <>
-            <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
-            </>: ""}
-            
-            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button><spacer size="small" />
-            <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button>
+            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button>
             </> : "" }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
@@ -1272,7 +1282,7 @@ Devvit.addCustomPostType({
         <blocks height="tall">
         <vstack gap="small" width="100%" height="100%" alignment="middle center" borderColor="transparent" border="none">
             <text wrap width="80%" style="heading" alignment="center middle">This post has expired.</text>
-            <text wrap width="80%" style="body" alignment='center middle'>Posts from Spottit app expire after 30 days(Due to current Reddit Developer Platform limitations).</text>
+            <text wrap width="80%" style="body" alignment='center middle'>Posts from Spottit app expire after 45 days(Due to current Reddit Developer Platform limitations).</text>
             <spacer size="medium"/>
         </vstack>
         </blocks>);   

@@ -53,6 +53,8 @@ Help page describes details on how to play the game and the app's features.
   * Bug fix: Android users were not able to click on spot to register, so made a small fix to address it.
 * 0.0.31
   * Enhancement: Added 'Join' button for users to subscribe to the subreddit after playing the game.
+* 0.0.32
+  * Enhancement: Added 'I give up!' Button to abort game, added 'Join' button for users to subscribe to the subreddit in game Resume and Aborted views.
 
 ## Links
 ### Demo
