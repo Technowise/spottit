@@ -1091,7 +1091,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            You can pinch and zoom into sections of the image, and pan by dragging the image as needed.
+            You can pinch and zoom into the image, and pan by dragging the image as needed.
           </text>
 
           <spacer size="small" />
@@ -1102,7 +1102,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            After you find the spot, you can double-tap/double-click on the spot to register. 
+            Double-tap/double-click on the spot to register after you find the spot. 
           </text>
 
           <spacer size="small" />
@@ -1126,11 +1126,7 @@ Devvit.addCustomPostType({
           <spacer size="xsmall" />
           <hstack>
             <text style="body" wrap size="medium" color='black'>
-              Click on&nbsp;
-            </text>
-            <icon name="show" size='small' color='black'></icon>
-            <text style="body" wrap size="medium" color='black'>
-              &nbsp;icon to abort game and show spot.
+              Click on 'I give up!' button to abort game and show the spot.
             </text>
           </hstack>
     
@@ -1142,7 +1138,7 @@ Devvit.addCustomPostType({
             </text>
           </hstack>
           <text style="body" wrap size="medium" color='black'>
-            View time taken by other participants by clicking on `Leaderboard` button.
+            Check time of other participants by clicking on `Leaderboard` button.
           </text> 
           <spacer size="small" />
 
@@ -1257,13 +1253,7 @@ Devvit.addCustomPostType({
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
             
-            {game.userGameStatus.state == gameStates.Started || game.userGameStatus.state == gameStates.Paused ? <><button icon="show" size="small" onPress={() => {
-              game.currPage = Pages.Picture;
-              const dBlocks:displayBlocks = game.UIdisplayBlocks;
-              dBlocks.confirmShowSpot = true;
-              game.UIdisplayBlocks = dBlocks;
-            }}></button><spacer size="small" />
-            
+            {game.userGameStatus.state == gameStates.Started || game.userGameStatus.state == gameStates.Paused ? <>
             <button icon="external" size="small" onPress={async () => await game.openSourceImage()}></button><spacer size="small" />
             </>: ""}
             
