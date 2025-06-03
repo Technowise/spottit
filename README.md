@@ -55,7 +55,7 @@ Help page describes details on how to play the game and the app's features.
   * Enhancement: Added 'Join' button for users to subscribe to the subreddit after playing the game.
 * 0.0.32
   * Enhancement: Added 'I give up!' Button to abort game, added 'Join' button for users to subscribe to the subreddit in game Resume and Aborted views.
-* 0.0.32
+* 0.0.33
   * Bug fix: Fixed logic for showing 'Join button in the Resume game view.  
 
 ## Links
