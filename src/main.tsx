@@ -1042,7 +1042,7 @@ Devvit.addCustomPostType({
             }} appearance="destructive">I give up!</button> </>: ""} 
       </hstack>
       <spacer size="small"/>
-      {game.userGameStatus.state == gameStates.Paused ? <>
+      {game.userGameStatus.state == gameStates.Paused && game.isUserSubscribed != true ? <>
           <spacer size="small"/>
           <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
           <spacer size="small"/>
