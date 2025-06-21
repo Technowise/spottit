@@ -497,6 +497,20 @@ class SpottitGame {
     }
   }
 
+  public getLeaderBoardPercentile(seconds:number) {//Return the perentiile among the leaderboard entries
+    var lbRecs = this.leaderBoardRec;
+    var count = 0;
+
+    for(var i=0;i< lbRecs.length; i++) {
+      if(lbRecs[i].timeInSeconds < seconds )
+        count++;
+      else
+        break;
+    }
+    var percentile = (count / lbRecs.length) * 100;
+    return percentile;
+  }
+
   public async showTheSpotAndAbort() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'true', {expiration: expireTime});
@@ -605,8 +619,14 @@ class SpottitGame {
 
   public async finishGame() {
 
+    var percentileMessage = '';
+    var percentile = this.getLeaderBoardPercentile(this.userGameStatus.counter);
+    if(percentile < 100 ) {
+      percentileMessage = "You are top "+ percentile.toFixed(2) +"% among the finishers."
+    }
+
     this._context.ui.showToast({
-      text: "Congratulations! 🎊 You finished finding the spot(s) in "+this.userGameStatus.counter+" seconds! ",
+      text: "Congrats! 🎊 You finished in "+this.userGameStatus.counter+" seconds! "+percentileMessage,
       appearance: 'success',
     });
 

@@ -59,6 +59,8 @@ Help page describes details on how to play the game and the app's features.
   * Bug fix: Fixed logic for showing 'Join button in the Resume game view.
 * 0.0.34
   * Bug fix: Flair selected was not getting applied to post through submitPost call. It is addressed now by using setPostFlair after the submitPost call.
+* 0.0.35
+  * Enhancement: Show percentile of the user among the leaderboard in toast message after finishing the game.
 
 ## Links
 ### Demo
