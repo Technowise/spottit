@@ -56,7 +56,9 @@ Help page describes details on how to play the game and the app's features.
 * 0.0.32
   * Enhancement: Added 'I give up!' Button to abort game, added 'Join' button for users to subscribe to the subreddit in game Resume and Aborted views.
 * 0.0.33
-  * Bug fix: Fixed logic for showing 'Join button in the Resume game view.  
+  * Bug fix: Fixed logic for showing 'Join button in the Resume game view.
+* 0.0.34
+  * Bug fix: Flair selected was not getting applied to post through submitPost call. It is addressed now by using setPostFlair after the submitPost call.
 
 ## Links
 ### Demo
