@@ -1328,6 +1328,28 @@ const pictureInputForm = Devvit.createForm(  (data) => {
     const subredditName = await reddit.getCurrentSubredditName();
     const postImage = event.values.postImage;
     const flairId = event.values.flair ? event.values.flair[0] : null;
+    var flairText = '';
+
+    console.log("Selected flair:");
+    console.log(event.values.flair);
+    const subreddit = await context.reddit.getCurrentSubreddit();
+    const flairTemplates = await subreddit.getPostFlairTemplates();
+    
+    console.log(flairTemplates);
+
+    for(var i=0; i< flairTemplates.length; i++ ) {
+      console.log(flairTemplates[i].id);
+      console.log(flairTemplates[i].text);
+      if( flairId == flairTemplates[i].id) {
+        flairText = flairTemplates[i].text;
+      }
+    }
+    //const options = flairTemplates.map(template => {
+    //  return { label: template.text, value: template.id };
+    //});
+  
+    console.log("Your selected flair text is: "+flairText );
+
 
     let regex = /^https?:\/\/.*\/.*\.(webp)\??.*$/gmi;
     if ( postImage.match(regex)){//Fail request if webp is submitted as this does not seem to be working with present devvit platform.
@@ -1357,7 +1379,8 @@ const pictureInputForm = Devvit.createForm(  (data) => {
       ),
       title: `${event.values.title} [Spottit]`,
       subredditName: subredditName,
-      flairId: flairId
+      flairId: flairId,
+      flairText: flairText
     });
   
     const {redis} = context;
