@@ -499,7 +499,7 @@ class SpottitGame {
 
   public getLeaderBoardPercentile(seconds:number) {//Return the perentiile among the leaderboard entries
     var lbRecs = this.leaderBoardRec;
-    var count = 0;
+    var count = 1;
 
     for(var i=0;i< lbRecs.length; i++) {
       if(lbRecs[i].timeInSeconds < seconds )
@@ -622,7 +622,7 @@ class SpottitGame {
     var percentileMessage = '';
     var percentile = this.getLeaderBoardPercentile(this.userGameStatus.counter);
     if(percentile < 100 ) {
-      percentileMessage = "You are top "+ percentile.toFixed(2) +"% among the finishers."
+      percentileMessage = "You are top "+ percentile.toFixed() +"% among the finishers."
     }
 
     this._context.ui.showToast({
@@ -1074,7 +1074,7 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Congrats! You have found the spot(s) in {game.userGameStatus.counter} seconds.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'> You have found the spot(s) in {game.userGameStatus.counter} seconds. You are top {game.getLeaderBoardPercentile(game.userGameStatus.counter).toFixed()}% among the finishers.</text>
         <spacer size="medium"/>
         {game.isUserSubscribed != true ? <>
           <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>

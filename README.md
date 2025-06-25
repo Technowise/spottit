@@ -61,6 +61,11 @@ Help page describes details on how to play the game and the app's features.
   * Bug fix: Flair selected was not getting applied to post through submitPost call. It is addressed now by using setPostFlair after the submitPost call.
 * 0.0.35
   * Enhancement: Show percentile of the user among the leaderboard in toast message after finishing the game.
+* 0.0.37
+  * Bug fixs: 
+    1) Fix issue with showing the spot by default for users who have aborted.
+    2) Fix issue with percentile calculcation for leaderboard.
+
 
 ## Links
 ### Demo
