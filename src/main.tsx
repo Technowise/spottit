@@ -216,7 +216,7 @@ class SpottitGame {
       const dBlocks:displayBlocks = {help:false, 
         picture: this.userIsAuthor && !this.validTileSpotsMarkingDone && !this._ScreenIsWide ? false:  true,
         spotTiles: this.userIsAuthor || this.userGameStatus.state == gameStates.Started || this.userGameStatus.state == gameStates.Aborted,
-        spots: !this.validTileSpotsMarkingDone || this.userGameStatus.state == gameStates.Aborted ? true: false,
+        spots: !this.validTileSpotsMarkingDone,
         zoomView: false,
         zoomAlignment: "top start",
         zoomSelect:false,
