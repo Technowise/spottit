@@ -62,7 +62,7 @@ Help page describes details on how to play the game and the app's features.
 * 0.0.35
   * Enhancement: Show percentile of the user among the leaderboard in toast message after finishing the game.
 * 0.0.37
-  * Bug fixs: 
+  * Bug fixes: 
     1) Fix issue with showing the spot by default for users who have aborted.
     2) Fix issue with percentile calculcation for leaderboard.
 
