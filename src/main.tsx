@@ -1,4 +1,4 @@
-import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView, SettingScope } from '@devvit/public-api';
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView, SettingScope, useForm } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
 Devvit.configure({redditAPI: true, 
                   redis: true,
@@ -96,8 +96,27 @@ class SpottitGame {
   private _isGameArchived: UseStateResult<boolean>;
   private _spotsCount: UseStateResult<number>;
   private _isUserSubscribed:UseStateResult<boolean>;
+  private _userSelectedForDeletion:UseStateResult<string>;
+  private _userIsModerator:UseStateResult<boolean>;
+
+  private confirmDeleteLeaderboardRecForm = useForm(
+    (data) => ({
+      title: 'Confirm Action',
+      description: `Are you sure you want to delete ${data.userSelectedForDeletion} from Leaderboard?`,
+      fields: [
+      ],
+      acceptLabel: 'Yes',
+      cancelLabel: 'No',
+    }),
+    (values) => {
+      this.deleteSlectedUserFromLeaderboard();
+    }
+  );
 
   constructor( context: ContextAPIClients, postId: string) {
+    this._userSelectedForDeletion = context.useState(async () => {
+      return '';
+    });;
     this._context = context;
     this._ui = context.ui;
     this.redis = context.redis;
@@ -150,6 +169,18 @@ class SpottitGame {
     });
 
     this._userIsAuthor = this.currentUsername == this.authorName;
+
+    this._userIsModerator = context.useState(async () => {
+      const subreddit = await this._context.reddit.getCurrentSubreddit();
+      const moderators = await subreddit.getModerators().all();
+
+      for (const mod of  moderators) {
+        if (mod.username === this.currentUsername) {
+          return true;
+        }
+      }
+      return false;
+    });;
 
     this._userGameStatus = context.useState<UserGameState>(
       async() =>{
@@ -326,12 +357,25 @@ class SpottitGame {
     return this._authorName[0];
   }
 
+  get userIsModerator() {
+    return this._userIsModerator[0];
+  }
+
   get imageURL() {
     return this._imageURL[0];
   }
 
   get gameArchived() {
     return this._isGameArchived[0];
+  }
+
+  get userSelectedForDeletion() {
+    return this._userSelectedForDeletion[0];
+  }
+
+  set userSelectedForDeletion(value) {
+    this._userSelectedForDeletion[0] = value;
+    this._userSelectedForDeletion[1](value);
   }
 
   public set UIdisplayBlocks(value: displayBlocks) {
@@ -433,6 +477,23 @@ class SpottitGame {
     return width == null ||  width < 688 ? false : true;
   }
 
+  private async deleteSlectedUserFromLeaderboard() {
+    const leaderBoardArray = this.leaderBoardRec;
+    var updatedLeaderBoardArray = this.leaderBoardRec;
+    for(var i=0; i< leaderBoardArray.length; i++ ) {
+      if( leaderBoardArray[i].username == this.userSelectedForDeletion) {
+        updatedLeaderBoardArray.splice(i, i+1);
+      }
+    }
+    this.leaderBoardRec = updatedLeaderBoardArray;
+    var removedItemsCount = await this.redis.hDel(this.myPostId, [this.userSelectedForDeletion]);
+    await this.redis.del( this.myPostId + this.userSelectedForDeletion +'GameAborted');
+    await this.redis.del( this.myPostId + this.userSelectedForDeletion +'StartTime');
+    await this.redis.del( this.myPostId + this.userSelectedForDeletion +'AttemptsCount'); 
+    await this.redis.del( this.myPostId + this.userSelectedForDeletion +'FoundSpots');
+    this._context.ui.showToast(this.userSelectedForDeletion+" has been deleted from the Leaderboard");
+  }
+
   private async isGameArchived() {
     var expireTimestamp = await getPostExpireTimestamp(this._context, this.myPostId);
     var dateNow = new Date();
@@ -527,19 +588,8 @@ class SpottitGame {
   }
 
   public async deleteLeaderboardRec(username: string) {//TODO: Add confirmation dialog
-    const leaderBoardArray = this.leaderBoardRec;
-    var updatedLeaderBoardArray = this.leaderBoardRec;
-    for(var i=0; i< leaderBoardArray.length; i++ ) {
-      if( leaderBoardArray[i].username == username) {
-        updatedLeaderBoardArray.splice(i, i+1);
-      }
-    }
-    this.leaderBoardRec = updatedLeaderBoardArray;
-    var removedItemsCount = await this.redis.hDel(this.myPostId, [username]);
-    await this.redis.del( this.myPostId + username +'GameAborted');
-    await this.redis.del( this.myPostId + username +'StartTime');
-    await this.redis.del( this.myPostId + username +'AttemptsCount'); 
-    await this.redis.del( this.myPostId + username +'FoundSpots');
+    this.userSelectedForDeletion = username;
+    this._context.ui.showForm(this.confirmDeleteLeaderboardRecForm, {userSelectedForDeletion: username});
   }
 
   public async alertRepeatSpotting() {
@@ -960,7 +1010,7 @@ Devvit.addCustomPostType({
         <text style="body" size="small" color="black" width="25%" alignment="center">
           &nbsp;{row.timeInSeconds}
         </text>
-        { game.userIsAuthor ? <text size="small" color="black" onPress={() => game.deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
+        { game.userIsAuthor  || game.userIsModerator ? <text size="small" color="black" onPress={() => game.deleteLeaderboardRec(row.username)} width="5%">X</text>: ""}
         </hstack>
       );
     };

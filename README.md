@@ -65,7 +65,11 @@ Help page describes details on how to play the game and the app's features.
   * Bug fixes: 
     1) Fix issue with showing the spot by default for users who have aborted.
     2) Fix issue with percentile calculcation for leaderboard.
-
+* 0.0.40
+  * Improvements:
+    1) Update to devvit public-api version 0.11.18
+    2) Add confirmation dialog for deletion of entries from Leaderboard.
+    3) Enable moderators of the sub to delete entries from leaderboard.
 
 ## Links
 ### Demo
