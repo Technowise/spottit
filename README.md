@@ -70,7 +70,10 @@ Help page describes details on how to play the game and the app's features.
     1) Update to devvit public-api version 0.11.18
     2) Add confirmation dialog for deletion of entries from Leaderboard.
     3) Enable moderators of the sub to delete entries from leaderboard.
-
+* 0.0.42
+  * Improvements:
+    1) Start the timer only after image is fully downloaded and loaded into the view.
+    2) Add loading indicator in the view.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)

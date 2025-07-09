@@ -89,7 +89,7 @@ window.addEventListener('message', (event) => {
           }, '*');
         }
       }
-
+    
       const zoomist = new Zoomist('.zoomist-container', {
         bounds: false,
         initScale: 1,
