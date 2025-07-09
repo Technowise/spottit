@@ -889,7 +889,7 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
-    const { mount, unmount, postMessage } = useWebView({
+    const { mount, postMessage } = useWebView({
       url: 'zoom-view.html',
       onMessage: async (message, webView) => {
         const wr = message as webviewSpotDataRequest;
@@ -1023,7 +1023,7 @@ Devvit.addCustomPostType({
              {game.leaderBoardRec.length} players have taken part in this Spottit post.
           </text>
           <spacer size="medium"/>
-          <button icon="image-post" appearance="media" onPress={mount} >View image!</button>
+          <button icon="image-post" appearance="media" onPress={mount} >View image</button>
         </vstack>
       </hstack>
     </vstack>

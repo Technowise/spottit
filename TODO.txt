@@ -1,3 +1,7 @@
+New todo:
+1. Implement a loading stage with loading indicator, where image is loaded in background (hidden and not shown), only start the timer after the image is shown.
+2. Implement golbal ranking leaderboard.
+
 1. After user aborts game, if refresh the view, it again shows 'Resume' option in the game. Make sure to not show Resume option once it is aborted. - Done
 2. For archived posts (older than 1 month), show proper indication of the expired post. Inform user that the entry would not be included in the leaderboard.
 3. Reduce the tile-size to 1/2 of the present size so that we can mark things that are closer by as separate spots, and make provision to mark spots within the web-view (instead of the present blocks view)

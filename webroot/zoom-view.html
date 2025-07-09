@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unscramble Game Feed</title>
+    <title>Spottit Game</title>
     <link rel="stylesheet" href="zoomist.css">
     <link rel="stylesheet" href="style.css">
     <script src="zoomist.umd.js"></script>
 </head>
 <body>
+
     <!-- zoomist-container -->
     <div class="zoomist-container" id="zoomist-container">
         <!-- zoomist-wrapper is required -->
         <div class="zoomist-wrapper">
         <!-- zoomist-image is required -->
             <div class="zoomist-image" id="zoomist-image">
-                <!-- you can add anything you want to zoom here. -->
+            </div>
+            <div id="loading-indicator">
+                <span id ="loading-text">Loading... </span>
+                <!--<img src="loading.gif" alt="Loading..."/> -->
             </div>
         </div>
     </div>

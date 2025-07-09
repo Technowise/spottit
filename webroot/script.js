@@ -71,14 +71,25 @@ window.addEventListener('message', (event) => {
       spotsCount = dataObj.spotsCount;
       imageAdded = true;
       zoomistContainer.style.display = "block";
-  
+      
       const image = document.createElement("img");
       image.height = "100%";
       image.width = "100%";
       image.src = imageUrl;
       image.id = "spottitImage";
       zoomistImageContainer.appendChild(image);
-  
+
+      image.onload = () => {
+        const lind = document.getElementById("loading-indicator");
+        lind.style.display = "none";
+        if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished && !userIsAuthor ) {
+          appendTilesOverlay(tilesData);
+          window.parent.postMessage({
+            type: 'startOrResumeGame'
+          }, '*');
+        }
+      }
+
       const zoomist = new Zoomist('.zoomist-container', {
         bounds: false,
         initScale: 1,
@@ -128,13 +139,6 @@ window.addEventListener('message', (event) => {
         bodyElement.style.backgroundImage = "";
       });
   
-      if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished && !userIsAuthor ) {
-        appendTilesOverlay(tilesData);
-        window.parent.postMessage({
-          type: 'startOrResumeGame'
-        }, '*');
-      }
-
   }
   else if( type == "messageOverlay" ) {
     const button = document.getElementById("startResumeButton");
