@@ -32,7 +32,6 @@ type displayBlocks = {
   zoomView: boolean,
   zoomAlignment: Devvit.Blocks.Alignment,
   zoomSelect:boolean,
-  confirmShowSpot:boolean,
   leaderBoard: boolean,
   MarkSpotsInfo: boolean,
   Info: boolean,
@@ -112,6 +111,20 @@ class SpottitGame {
       this.deleteSlectedUserFromLeaderboard();
     }
   );
+
+  private confirmShowSpotForm = useForm(
+      {
+        title: 'Are you sure to give up?',
+        description: `Are you sure you want give up and view the spot? You will not be able to resume again.`,
+        fields: [
+        ],
+        acceptLabel: 'Yes',
+        cancelLabel: 'No',
+      },
+      async (values) => {
+        await this.showTheSpotAndAbort();
+      }
+    );
 
   constructor( context: ContextAPIClients, postId: string) {
     this._userSelectedForDeletion = context.useState(async () => {
@@ -251,7 +264,6 @@ class SpottitGame {
         zoomView: false,
         zoomAlignment: "top start",
         zoomSelect:false,
-        confirmShowSpot:false,
         leaderBoard: false,
         MarkSpotsInfo: !this.validTileSpotsMarkingDone && this.userIsAuthor,
         Info: false};
@@ -572,6 +584,10 @@ class SpottitGame {
     return percentile;
   }
 
+  public showConfirmShowSpotForm() {
+    this._context.ui.showForm(this.confirmShowSpotForm, {});
+  }
+
   public async showTheSpotAndAbort() {
     const dBlocks:displayBlocks = this.UIdisplayBlocks;
     await this.redis.set(this.redisKeyPrefix+'GameAborted', 'true', {expiration: expireTime});
@@ -579,9 +595,8 @@ class SpottitGame {
     ugs.state = gameStates.Aborted;
     this.userGameStatus = ugs;
     dBlocks.spots = true;
-    dBlocks.confirmShowSpot = false;
     this._context.ui.showToast({
-      text: "You can find the object/thing behind the red spots shown!",
+      text: "Red area shown over the picture marks the spot(s)!",
       appearance: 'neutral',
     });
     this.UIdisplayBlocks = dBlocks;
@@ -1029,39 +1044,6 @@ Devvit.addCustomPostType({
     </vstack>
     );
 
-    const ConfirmShowSpotBlock = ({ game }: { game: SpottitGame }) => (
-      <hstack width="344px" height="100%" alignment="middle center" backgroundColor='transparent'>
-        <vstack  width="320px" height="45%" alignment="center middle" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
-          <hstack padding="small">
-            <text style="heading" size="large" weight='bold' alignment="middle center" width="270px" color='black'>
-                &nbsp;Are you sure to give up?
-            </text>
-            <button size="small" icon='close' width="34px" onPress={() => {
-                const dBlocks:displayBlocks = game.UIdisplayBlocks;
-                dBlocks.confirmShowSpot = false;
-                game.UIdisplayBlocks = dBlocks;
-              }}></button>
-          </hstack>
-          <vstack height="70%" width="100%" padding="medium">
-            <text wrap color='black'>
-            Are you sure you want give up and view the spot? You will not be able to resume again.
-            </text>
-            <spacer size="large" />
-            <hstack alignment="bottom center" width="100%">
-              <button size="small" icon='checkmark' onPress={() => game.showTheSpotAndAbort()}>Yes</button>
-              <spacer size="medium" />
-              <button size="small" icon='close' onPress={() => {
-                game.setHomepage();
-                const dBlocks:displayBlocks = game.UIdisplayBlocks;
-                dBlocks.confirmShowSpot = false;
-                game.UIdisplayBlocks = dBlocks;
-              }}>Cancel</button>
-            </hstack>
-          </vstack>
-        </vstack>
-      </hstack>
-    );
-
     const MarkSpotsInfo = ({ game }: { game: SpottitGame }) => (     
       <vstack width="344px" height={'100%'} alignment="start middle" backgroundColor='white' padding="medium">
         <hstack>
@@ -1105,10 +1087,7 @@ Devvit.addCustomPostType({
               <button appearance="caution" onPress={mount}>Resume</button>
               <spacer size="small"/>
               <button onPress={() => {
-              game.currPage = Pages.Picture;
-              const dBlocks:displayBlocks = game.UIdisplayBlocks;
-              dBlocks.confirmShowSpot = true;
-              game.UIdisplayBlocks = dBlocks;
+              game.showConfirmShowSpotForm();
             }} appearance="destructive">I give up!</button> </>: ""} 
       </hstack>
       <spacer size="small"/>
@@ -1261,9 +1240,6 @@ Devvit.addCustomPostType({
       if ( game.userGameStatus.state == gameStates.Aborted && !game.UIdisplayBlocks.spots ) {
         return <GameAbortedBlock game={game} />;
       }
-      else if( game.UIdisplayBlocks.confirmShowSpot ) {
-        return <ConfirmShowSpotBlock game={game}/>;
-      }
       else if( game.userIsAuthor && game.validTileSpotsMarkingDone && !game.UIdisplayBlocks.spots ) {
         return  <InfoBlock game={game} />;
       }
@@ -1379,7 +1355,7 @@ const pictureInputForm = Devvit.createForm(  (data) => {
         name: 'postImage',
         label: 'Select picture for your post',
         required: true,
-        helpText: "Select JPG or PNG image for your post. Please note that WEBP is presently not supported. Portrait/vertical orientation picture is recommended for better view.",
+        helpText: "Select a JPG/PNG/Webp image for your post. Portrait/vertical orientated pictures work best for this.",
       },
       {
         type: 'select',
@@ -1407,15 +1383,6 @@ const pictureInputForm = Devvit.createForm(  (data) => {
         flairText = flairTemplates[i].text;
       }
     }
-  
-    let regex = /^https?:\/\/.*\/.*\.(webp)\??.*$/gmi;
-    if ( postImage.match(regex)){//Fail request if webp is submitted as this does not seem to be working with present devvit platform.
-      ui.showToast({
-        text: `WEBP format is presently not supported. Please either select either a JPG or PNG image. Submission failed.`,
-        appearance: 'neutral',
-      });
-      return;
-    }  
 
     const post = await context.reddit.submitPost({
       preview: (// This will show while your post is loading
@@ -1439,7 +1406,6 @@ const pictureInputForm = Devvit.createForm(  (data) => {
       flairId: flairId,
       flairText: flairText
     });
-
 
     await reddit.setPostFlair({
       postId: post.id,

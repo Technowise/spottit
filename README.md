@@ -74,6 +74,10 @@ Help page describes details on how to play the game and the app's features.
   * Improvements:
     1) Start the timer only after image is fully downloaded and loaded into the view.
     2) Add loading indicator in the view.
+* 0.0.45
+  * Enhancements: 
+    1) Use form for aborting game instead of custom view.
+    2) Remove check on webp files as webp file uploads are now supported correctly by platform.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)
