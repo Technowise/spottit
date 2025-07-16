@@ -78,6 +78,11 @@ Help page describes details on how to play the game and the app's features.
   * Enhancements: 
     1) Use form for aborting game instead of custom view.
     2) Remove check on webp files as webp file uploads are now supported correctly by platform.
+* 0.0.45
+  * Bug fixes and improvements: 
+    1) Fixing bug where user time becomes zero
+    2) Remove unused UI blocks.
+    3) Add link to Creating new post in Help section.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)

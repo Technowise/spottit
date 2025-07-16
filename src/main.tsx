@@ -686,7 +686,7 @@ class SpottitGame {
 
     var percentileMessage = '';
     var percentile = this.getLeaderBoardPercentile(this.userGameStatus.counter);
-    if(percentile < 100 ) {
+    if( percentile > 0 && percentile < 100 ) {
       percentileMessage = "You are top "+ percentile.toFixed() +"% among the finishers."
     }
 
@@ -732,15 +732,6 @@ class SpottitGame {
     this.userGameStatus = ugs;
   }
 
-  public async checkIfTileIsValid(index:number) {
-    if( this._tilesData[0][index] ==  1 && this.userGameStatus.counter > 0 ) {
-      await this.finishGame();
-    }
-    else {
-      await this.incrementAttempts();
-    }
-  }
-
   public async openIntroPage() {
     this._context.ui.navigateTo('https://www.reddit.com/r/Spottit/comments/1ethp30/introduction_to_spottit_game/');
   };
@@ -782,14 +773,6 @@ class SpottitGame {
     this.currPage = Pages.LeaderBoard;
   }
 
-  public hideLeaderboardBlock() {
-    this.setHomepage();
-  }
-
-  public hideHelpBlock() {
-    this.setHomepage();
-  }
-
   public pauseGame() {
     this._counterInterval.stop();
     const ugs = this.userGameStatus;
@@ -805,6 +788,8 @@ class SpottitGame {
     if( ugs.startTime == 0 ) { //First time the game is starting, set start time. 
       ugs.startTime = new Date().getTime();
       await this.redis.set(this.redisKeyPrefix+'StartTime', ugs.startTime.toString(), {expiration: expireTime});
+      await this.redis.set(this.redisKeyPrefix+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
+      await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
     }
     ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
     this.userGameStatus = ugs;
@@ -1004,7 +989,7 @@ Devvit.addCustomPostType({
             <spacer size="xsmall" /><text alignment="middle" color="black"> Page: {currentPage + 1}</text><spacer size="xsmall" />
             <button size="small" onPress={toNextPage} icon="right"/>
             <spacer size="small" />
-            <button size="small" icon='close' onPress={() => game.hideLeaderboardBlock()}>Close</button>
+            <button size="small" icon='close' onPress={() => game.setHomepage()}>Close</button>
           </hstack>
           <spacer size="small" />
         </vstack>
@@ -1171,14 +1156,16 @@ Devvit.addCustomPostType({
 
           <spacer size="small" />
           <hstack alignment='start middle'>
-            <icon name="external" size="xsmall" color='black'></icon>
+            <icon name="add" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; View Full Image.
+              &nbsp; Create your own Spottit Puzzles:
             </text>
           </hstack>
-          <text style="body" wrap size="medium" color='black'>
-            You can view full image by clicking on the external icon.
-          </text> 
+          <button size="small" onPress={async () => {
+            const postId = 't3_1jqc33d';
+            const post = await context.reddit.getPostById(postId);
+            context.ui.navigateTo(post);
+          }}>Click here for a detailed post</button>
           
           <spacer size="small" />
           <hstack alignment='start middle'>
@@ -1208,7 +1195,7 @@ Devvit.addCustomPostType({
 
         </vstack>
         <hstack alignment="bottom center" width="100%" height="8%">
-          <button size="small" icon='close' onPress={() => game.hideHelpBlock()}>Close</button>
+          <button size="small" icon='close' onPress={() => game.setHomepage()}>Close</button>
         </hstack>
       </vstack>
     );
@@ -1263,9 +1250,6 @@ Devvit.addCustomPostType({
           if( !game.validTileSpotsMarkingDone && game.userIsAuthor ) {
             game.toggleValidTile(index);
           } 
-          else if( game.userGameStatus.state == gameStates.Started && !game.userIsAuthor ){
-            game.checkIfTileIsValid(index);
-          }
         }}
 
         width = {`${sizexBlocks}px`}
@@ -1289,13 +1273,6 @@ Devvit.addCustomPostType({
       </vstack>
     );
 
-    const StatusBlock = ({ game }: { game: SpottitGame }) => game.userGameStatus.state == gameStates.Started &&  (
-      <hstack alignment="top end">
-        <text style="body" size='medium' weight="regular" width="85px">
-          Time: {game.userGameStatus.counter}
-        </text>
-      </hstack> );
-
     cp = [  <PictureBlock game={game} />,
       <HelpBlock game={game} />,
       <MarkSpotsInfo game={game} />,
@@ -1318,7 +1295,6 @@ Devvit.addCustomPostType({
             </> : "" }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
-            <StatusBlock game={game} />
 
           </hstack>
         </blocks>
