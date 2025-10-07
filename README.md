@@ -83,6 +83,8 @@ Help page describes details on how to play the game and the app's features.
     1) Fixing bug where user time becomes zero
     2) Remove unused UI blocks.
     3) Add link to Creating new post in Help section.
+* 0.0.46
+  * Enhancement: Show the percentile as top 1% when the user's rank is in fraction between 0 and 1.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)

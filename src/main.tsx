@@ -581,6 +581,11 @@ class SpottitGame {
         break;
     }
     var percentile = (count / lbRecs.length) * 100;
+
+    if( percentile < 1 ) { //show as top 1% if it is less than 1.
+      percentile = 1;
+    }
+  
     return percentile;
   }
 
