@@ -1093,7 +1093,7 @@ Devvit.addCustomPostType({
   
     const GameFinishedBlock = ({ game }: { game: SpottitGame }) => (
       <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 0.60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'> You have found the spot(s) in {game.userGameStatus.counter} seconds. You are top {game.getLeaderBoardPercentile(game.userGameStatus.counter).toFixed()}% among the finishers.</text>
+        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center'> You found the spot(s) in {game.userGameStatus.counter} seconds. You are top {game.getLeaderBoardPercentile(game.userGameStatus.counter).toFixed()}% among the {game.leaderBoardRec.length} finishers.</text>
         <spacer size="medium"/>
         {game.isUserSubscribed != true ? <>
           <text size="large" weight="bold" wrap color="white"> Join us for daily visual puzzles! </text>
@@ -1123,12 +1123,6 @@ Devvit.addCustomPostType({
       </vstack>
     );
   
-    const MaxAttemptsReachedBlock = ({ game }: { game: SpottitGame }) => (
-      <vstack width="344px" height="100%" alignment="center middle" backgroundColor='rgba(28, 29, 28, 60)'>
-        <text width="300px" size="large" weight="bold" wrap color="white" alignment='middle center' >Sorry, you have used all {maxWrongAttempts} attempts to find the spot and unfortunately the spot is still not found!</text>
-      </vstack>
-    );
-
     const HelpBlock = ({ game }: { game: SpottitGame }) => (
       <vstack  width="344px" height="100%" alignment="top start" backgroundColor='white' borderColor='black' border="thick" cornerRadius="small">
         <hstack padding="small" width="100%">

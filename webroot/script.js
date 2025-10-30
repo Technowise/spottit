@@ -17,7 +17,7 @@ function detectDoubleTap(doubleTapMs) {
   }
 }
 
-document.addEventListener('pointerup', detectDoubleTap(500));// initialize the new event
+document.addEventListener('pointerup', detectDoubleTap(280));// initialize the new event
 
 const zoomistImageContainer = document.getElementById("zoomist-image");
 const zoomistContainer = document.getElementById("zoomist-container");
