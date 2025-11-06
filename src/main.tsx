@@ -142,7 +142,7 @@ class SpottitGame {
         const ugs = this.userGameStatus;
 
         if( timeNow > ugs.startTime ) {
-          ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+          ugs.counter = Math.floor( (timeNow - ugs.startTime ) / 1000 );
           if( ugs.counter > 1800 ) {//Max out the counter at 30 minutes.
             ugs.counter = 1800
           }
@@ -689,14 +689,15 @@ class SpottitGame {
 
   public async finishGame() {
 
+    var totalSeconds = Math.max(this.userGameStatus.counter, 1);
     var percentileMessage = '';
-    var percentile = this.getLeaderBoardPercentile(this.userGameStatus.counter);
+    var percentile = this.getLeaderBoardPercentile(totalSeconds);
     if( percentile > 0 && percentile < 100 ) {
       percentileMessage = "You are top "+ percentile.toFixed() +"% among the finishers."
     }
 
     this._context.ui.showToast({
-      text: "Congrats! 🎊 You finished in "+this.userGameStatus.counter+" seconds! "+percentileMessage,
+      text: "Congrats! 🎊 You finished in "+totalSeconds+" seconds! "+percentileMessage,
       appearance: 'success',
     });
 
@@ -796,7 +797,7 @@ class SpottitGame {
       await this.redis.set(this.redisKeyPrefix+'AttemptsCount', ugs.attemptsCount.toString(), {expiration: expireTime});
       await this.redis.set(this.redisKeyPrefix+'FoundSpots', this.userGameStatus.foundSpots.join(",") , {expiration: expireTime});
     }
-    ugs.counter = Math.floor ( (timeNow - ugs.startTime ) / 1000 );
+    ugs.counter = Math.floor( (timeNow - ugs.startTime ) / 1000 );
     this.userGameStatus = ugs;
 
     this._counterInterval.start();
@@ -1170,13 +1171,13 @@ Devvit.addCustomPostType({
           <hstack alignment='start middle'>
             <icon name="show" size="xsmall" color='black'></icon>
             <text style="heading" size="medium" color='black'>
-              &nbsp; Abort game and show spot.
+              &nbsp; Abort game and reveal the spot.
             </text>
           </hstack>
           <spacer size="xsmall" />
           <hstack>
             <text style="body" wrap size="medium" color='black'>
-              Click on 'I give up!' button to abort game and show the spot.
+              Click on 'I give up!' button to abort game and reveal the spot.
             </text>
           </hstack>
     
@@ -1290,7 +1291,7 @@ Devvit.addCustomPostType({
             <button icon="list-numbered" size="small" onPress={() => game.showLeaderboardBlock()}>Leaderboard</button><spacer size="small" />
             </>:""}
             
-            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Show"} </button>
+            { ( game.userIsAuthor || game.userGameStatus.state == gameStates.Aborted || game.userGameStatus.state == gameStates.Finished ) && game.validTileSpotsMarkingDone ? <><button icon="show" size="small" width="80px" onPress={() => game.toggleSpots()}> { game.UIdisplayBlocks.spots ? "Hide":"Reveal"} </button>
             </> : "" }
             
             {game.userIsAuthor && !game.validTileSpotsMarkingDone? <><button size="small" onPress={ ()=> game.finishMarkingSpots() }> Done marking!</button></>:""}
