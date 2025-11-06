@@ -87,6 +87,8 @@ Help page describes details on how to play the game and the app's features.
   * Enhancement: Show the percentile as top 1% when the user's rank is in fraction between 0 and 1.
 * 0.0.47
   * Enhancement: Show the number(count) of participants along with user's position after finishing game, and reduce the double-tap time to reduce the chances of taking double-tap while they are quickly panning across the image.
+* 0.0.48
+  * Enhancement: Fix for message showing as  '0 second' when user took 1 second. Change "Show" button to "Reveal" button.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)
