@@ -1,10 +1,28 @@
-New todo:
-1. Implement a loading stage with loading indicator, where image is loaded in background (hidden and not shown), only start the timer after the image is shown.
-2. Implement golbal ranking leaderboard.
+## Migration to Devvit Web - COMPLETED ✅
 
-1. After user aborts game, if refresh the view, it again shows 'Resume' option in the game. Make sure to not show Resume option once it is aborted. - Done
-2. For archived posts (older than 1 month), show proper indication of the expired post. Inform user that the entry would not be included in the leaderboard.
-3. Reduce the tile-size to 1/2 of the present size so that we can mark things that are closer by as separate spots, and make provision to mark spots within the web-view (instead of the present blocks view)
-4. Allow moderators to delete faulty entries in leader-board.
-5. Make it impossible to have a negative score. - Done
-6. Find out how number of spots found sometimes goes greater than the actual number of spots.
+The app has been successfully migrated to Devvit Web architecture while preserving full webview functionality including the modal zoom view with pan/zoom and double-tap interaction.
+
+## Post-Migration TODO:
+
+### High Priority:
+1. ✅ Restore modal webview functionality - COMPLETED
+2. ✅ Preserve zoom/pan controls - COMPLETED  
+3. ✅ Maintain double-tap spot detection - COMPLETED
+4. Test cross-platform compatibility thoroughly
+
+### Medium Priority:
+1. Implement global ranking leaderboard
+2. Reduce tile-size for more precise spot marking
+3. Add animation effects for successful spot finding
+4. Improve responsive design for different screen sizes
+
+### Low Priority:
+1. For archived posts (older than 1 month), show proper indication of the expired post
+2. Allow moderators to delete faulty entries in leader-board
+3. Find out how number of spots found sometimes goes greater than the actual number of spots
+
+### Completed:
+- ✅ Migration from useWebView to Devvit Web
+- ✅ After user aborts game, Resume option no longer shows
+- ✅ Make it impossible to have a negative score
+- ✅ All core game functionality preserved

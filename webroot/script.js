@@ -29,17 +29,41 @@ var validTileSpotsMarkingDone = false;
 var playersCount = 0;
 var successfullySpottedAllSpots = false;
 var spotsCount = 0;
+var messageCount = 0;
 
 function loadImage() {
   if ( zoomistImageContainer.childElementCount == 0 ){
+      console.log('Webview: Sending ready message');
       window.parent.postMessage({
-      type: 'requestImage'
+      type: 'ready'
       }, '*');
   }
 }
 
 loadImage();
 var imageAdded = false;
+
+// Add a fallback test after 5 seconds if no image is loaded
+setTimeout(() => {
+  if (!imageAdded) {
+    console.log('Webview: No image loaded after 5 seconds, trying fallback test');
+    // Try to load a test image to see if the basic functionality works
+    const testImage = document.createElement("img");
+    testImage.src = "https://via.placeholder.com/500x500/FF0000/FFFFFF?text=TEST";
+    testImage.style.width = "100%";
+    testImage.style.height = "100%";
+    testImage.onload = () => {
+      console.log('Webview: Test image loaded successfully');
+      const lind = document.getElementById("loading-indicator");
+      if (lind) lind.style.display = "none";
+    };
+    testImage.onerror = () => {
+      console.error('Webview: Even test image failed to load');
+    };
+    zoomistImageContainer.appendChild(testImage);
+    zoomistContainer.style.display = "block";
+  }
+}, 5000);
 var zoomed = false;
 var dragged = false;
 var zoomTimeoutId = null;
@@ -56,11 +80,46 @@ const gameStates = Object.freeze( {
 });
 
 window.addEventListener('message', (event) => {
-  dataObj = event.data.data.message.data;
+  messageCount++;
+  console.log('Webview: Received message', event.data);
+  console.log('Webview: Message structure:', JSON.stringify(event.data, null, 2));
+  
+  // Update debug info
+  document.getElementById('message-count').textContent = `Messages received: ${messageCount}`;
+  document.getElementById('last-message').textContent = `Last message: ${JSON.stringify(event.data).substring(0, 100)}...`;
+  
+  // Handle different possible message formats
+  let dataObj = event.data;
+  
+  // Handle Devvit Web message format
+  if (dataObj.type === 'devvit-message' && dataObj.data) {
+    console.log('Webview: Found devvit-message wrapper, unwrapping');
+    dataObj = dataObj.data;
+    
+    // Check if the actual message is nested inside a 'message' property
+    if (dataObj.message && dataObj.message.type) {
+      console.log('Webview: Found nested message property, extracting');
+      dataObj = dataObj.message;
+    }
+  } else if (dataObj.data && dataObj.data.type) {
+    console.log('Webview: Found nested data structure');
+    dataObj = dataObj.data;
+  }
 
+  console.log('Webview: Final dataObj:', dataObj);
+  console.log('Webview: Processing message type:', dataObj.type);
   var type = dataObj.type;
   
   if (type  == "image" && !imageAdded ) {
+      console.log('Webview: Processing image message', dataObj);
+      console.log('Webview: Image URL:', dataObj.url);
+      console.log('Webview: Tiles data:', dataObj.tilesData);
+
+      // Validate that we have the required data
+      if (!dataObj.url) {
+        console.error('Webview: No image URL provided!');
+        return;
+      }
 
       imageUrl = dataObj.url;
       tilesData =  dataObj.tilesData;
@@ -70,24 +129,50 @@ window.addEventListener('message', (event) => {
       playersCount = dataObj.playersCount;
       spotsCount = dataObj.spotsCount;
       imageAdded = true;
+      
+      console.log('Webview: Making zoomist container visible');
       zoomistContainer.style.display = "block";
       
+      console.log('Webview: Creating image element with URL:', imageUrl);
       const image = document.createElement("img");
       image.height = "100%";
       image.width = "100%";
       image.src = imageUrl;
       image.id = "spottitImage";
+      
+      // Add image to container first
       zoomistImageContainer.appendChild(image);
+      console.log('Webview: Image element added to container');
+      
+      // Force a check to see if image loads
+      setTimeout(() => {
+        console.log('Webview: Checking image load status after 2 seconds');
+        console.log('Webview: Image complete:', image.complete);
+        console.log('Webview: Image naturalWidth:', image.naturalWidth);
+        if (image.complete && image.naturalWidth > 0) {
+          console.log('Webview: Image loaded successfully (delayed check)');
+        } else {
+          console.log('Webview: Image still loading or failed (delayed check)');
+        }
+      }, 2000);
 
       image.onload = () => {
+        console.log('Webview: Image loaded successfully');
+        document.getElementById('image-status').textContent = 'Image status: Loaded successfully';
         const lind = document.getElementById("loading-indicator");
         lind.style.display = "none";
         if( ugs.state != gameStates.Aborted && ugs.state != gameStates.Finished && !userIsAuthor ) {
+          console.log('Webview: Adding tiles overlay and starting game');
           appendTilesOverlay(tilesData);
           window.parent.postMessage({
             type: 'startOrResumeGame'
           }, '*');
         }
+      }
+      
+      image.onerror = () => {
+        console.error('Webview: Failed to load image:', imageUrl);
+        document.getElementById('image-status').textContent = `Image status: Failed to load ${imageUrl}`;
       }
     
       const zoomist = new Zoomist('.zoomist-container', {
@@ -200,7 +285,7 @@ function sendSuccessfulSpotting(event) {
     
     if( !ugs.foundSpots.includes(event.currentTarget.spotNumber) ) {
       window.parent.postMessage({
-        type: 'succcessfulSpotting',
+        type: 'successfulSpotting',
         row: event.currentTarget.row,
         col: event.currentTarget.col,
         }, '*');
@@ -212,7 +297,7 @@ function sendSuccessfulSpotting(event) {
         
     } else  {
       window.parent.postMessage({
-        type: 'repeatSucccessfulSpotting',
+        type: 'repeatSpotting',
         row: event.currentTarget.row,
         col: event.currentTarget.col,
         }, '*');
@@ -223,7 +308,7 @@ function sendSuccessfulSpotting(event) {
 function sendFailedSpotting(event) {
   if( !zoomed && !successfullySpottedAllSpots ) {
     window.parent.postMessage({
-      type: 'unsucccessfulSpotting',
+      type: 'unsuccessfulSpotting',
       row: event.currentTarget.row,
       col: event.currentTarget.col,
       }, '*');

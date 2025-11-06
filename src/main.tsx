@@ -1,8 +1,12 @@
-import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, useWebView, SettingScope, useForm } from '@devvit/public-api';
+import { ContextAPIClients, UIClient, UseIntervalResult, UseStateResult, Devvit, RedisClient, TriggerContext, SettingScope, useForm, useWebView } from '@devvit/public-api';
 import { usePagination } from '@devvit/kit';
-Devvit.configure({redditAPI: true, 
-                  redis: true,
-                  userActions: false });
+Devvit.configure({
+  redditAPI: true, 
+  redis: true,
+  userActions: false,
+  http: true,
+  media: true
+});
 
 const resolutionx = 22;
 const resolutiony = 34;
@@ -60,6 +64,8 @@ type UserGameState = {
   attemptsCount: number;
   foundSpots: number[];
 }
+
+
 
 type webviewSpotDataRequest = {
   type: string;
@@ -714,7 +720,7 @@ class SpottitGame {
       */
     }
 
-    const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to old picture view after game is finished.
+    const dBlocks:displayBlocks = this.UIdisplayBlocks; //switch to picture view after game is finished.
     dBlocks.zoomView = false;
     dBlocks.picture = true;
     this.UIdisplayBlocks = dBlocks;
@@ -811,6 +817,8 @@ class SpottitGame {
       appearance: 'neutral'});
   }
 
+
+
   public async createPostArchiveCommentJob() {
     try {
       var dateNow = new Date();
@@ -895,47 +903,69 @@ Devvit.addCustomPostType({
   name: 'Spottit Post',
   height: 'tall',
   render: context => {
+    const myPostId = context.postId ?? 'defaultPostId';
+    const game = new SpottitGame(context, myPostId);
+
     const { mount, postMessage } = useWebView({
       url: 'zoom-view.html',
       onMessage: async (message, webView) => {
+        console.log('Main app: Received message from webview', message);
         const wr = message as webviewSpotDataRequest;
         const tilesData = {
-        data: game.tilesData,
-        resolutionx : resolutionx,
-        resolutiony : resolutiony,
-        sizex: sizex,
-        sizey:sizey
+          data: game.tilesData,
+          resolutionx: resolutionx,
+          resolutiony: resolutiony,
+          sizex: sizex,
+          sizey: sizey
         };
 
-        if( wr.type == "requestImage") {//Load image
-          postMessage({data: {type: "image", 
-                            url: game.imageURL, 
-                            tilesData: tilesData, 
-                            ugs: game.userGameStatus, 
-                            userIsAuthor: game.userIsAuthor, 
-                            validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
-                            playersCount: game.leaderBoardRec.length,
-                            spotsCount: game.spotsCount,
-          }});
+        if (wr.type == "ready") {
+          // Use a polling approach to wait for data to be ready
+          const sendImageData = () => {
+            console.log('Main app: Checking game data', {
+              imageURL: game.imageURL,
+              tilesDataLength: game.tilesData.length,
+              hasImageURL: !!game.imageURL && game.imageURL !== ""
+            });
+            
+            if (game.imageURL && game.imageURL !== "" && game.tilesData.length > 0) {
+              console.log('Main app: Sending image data to webview');
+              postMessage({
+                type: "image", 
+                url: game.imageURL, 
+                tilesData: tilesData, 
+                ugs: game.userGameStatus, 
+                userIsAuthor: game.userIsAuthor, 
+                validTileSpotsMarkingDone: game.validTileSpotsMarkingDone,
+                playersCount: game.leaderBoardRec.length,
+                spotsCount: game.spotsCount,
+              });
+            } else {
+              console.log('Main app: Game data not ready, retrying in 200ms');
+              setTimeout(sendImageData, 200);
+            }
+          };
+          
+          sendImageData();
         }
-        else if(wr.type == "succcessfulSpotting") {//Finish the game with usual process.
-          const isGameFinished = await game.addFoundSpot( game.tilesData2D[wr.row][wr.col]);
-          if( isGameFinished ) {
+        else if (wr.type == "successfulSpotting") {
+          const isGameFinished = await game.addFoundSpot(game.tilesData2D[wr.row][wr.col]);
+          if (isGameFinished) {
             webView.unmount();
           }
         }
-        else if(wr.type == "unsucccessfulSpotting") {
+        else if (wr.type == "unsuccessfulSpotting") {
           await game.incrementAttempts();
         }
-        else if(wr.type == "startOrResumeGame") {
+        else if (wr.type == "startOrResumeGame") {
           await game.startOrResumeGame();
         }
-        else if(wr.type == "repeatSucccessfulSpotting") {//Finish the game with usual process.
+        else if (wr.type == "repeatSpotting") {
           await game.alertRepeatSpotting();
         }
       },
       onUnmount: async () => {
-        if( game.userGameStatus.state !== gameStates.Finished && game.userGameStatus.state !== gameStates.Aborted ) {
+        if (game.userGameStatus.state !== gameStates.Finished && game.userGameStatus.state !== gameStates.Aborted) {
           game.pauseGame();
         }
         game.setHomepage();
@@ -1239,9 +1269,6 @@ Devvit.addCustomPostType({
       return null;
     }
 
-    const myPostId = context.postId ?? 'defaultPostId';
-    const game = new SpottitGame(context, myPostId);
-
     const {currentPage, currentItems, toNextPage, toPrevPage} = usePagination(context, game.leaderBoardRec, leaderBoardPageSize);
     
     const pixels = game.tilesData.map((pixel, index) => (
@@ -1272,6 +1299,8 @@ Devvit.addCustomPostType({
         ))}
       </vstack>
     );
+
+
 
     cp = [  <PictureBlock game={game} />,
       <HelpBlock game={game} />,
