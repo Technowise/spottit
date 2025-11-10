@@ -89,6 +89,9 @@ Help page describes details on how to play the game and the app's features.
   * Enhancement: Show the number(count) of participants along with user's position after finishing game, and reduce the double-tap time to reduce the chances of taking double-tap while they are quickly panning across the image.
 * 0.0.48
   * Enhancement: Fix for message showing as  '0 second' when user took 1 second. Change "Show" button to "Reveal" button.
+* 0.0.49
+  * Upgrade to latest version of Devvit.
+  * Enhancement: After game is finished, "Reveal" button to still reveal the spots by highlighting, and clear the other overlay.
 ## Links
 ### Demo
 You can try out this game by going here: [Spottit game community](https://www.reddit.com/r/Spottit/)

@@ -650,25 +650,27 @@ class SpottitGame {
     const ugs = this.userGameStatus;
     var foundEntry = false;
 
+    var totalTime = Math.max(ugs.counter, this.spotsCount ); //in case of error in counter, take total spots count as total time
+
     if( ugs.foundSpots.length == this.spotsCount ) {
       ugs.state = gameStates.Finished;
     }
     const leaderBoardArray = this.leaderBoardRec;
 
     if( ugs.counter <= 0 ) {
-      ugs.counter = 1;
+      ugs.counter = totalTime;
     }
 
     for(var i =0; i < leaderBoardArray.length; i++ ) { //Search and update existing leaderboard entry if found.
       if(leaderBoardArray[i].username == this.currentUsername) {
         foundEntry = true;
         leaderBoardArray[i].foundSpots = ugs.foundSpots;
-        leaderBoardArray[i].timeInSeconds =  ugs.counter;
+        leaderBoardArray[i].timeInSeconds =  totalTime;
       }
     }
 
     const leaderBoardObj:leaderBoard  = { username:this.currentUsername, 
-      timeInSeconds: this.userGameStatus.counter, 
+      timeInSeconds: totalTime, 
       attempts: this.userGameStatus.attemptsCount,
       foundSpots: this.userGameStatus.foundSpots
     };
@@ -689,7 +691,7 @@ class SpottitGame {
 
   public async finishGame() {
 
-    var totalSeconds = Math.max(this.userGameStatus.counter, 1);
+    var totalSeconds = Math.max(this.userGameStatus.counter, this.spotsCount);
     var percentileMessage = '';
     var percentile = this.getLeaderBoardPercentile(totalSeconds);
     if( percentile > 0 && percentile < 100 ) {
@@ -1233,7 +1235,7 @@ Devvit.addCustomPostType({
       else if( !game.userIsAuthor && game.userGameStatus.state != gameStates.Finished && game.validTileSpotsMarkingDone && game.userGameStatus.state != gameStates.Aborted  )  {
         return <GameStartBlock game={game}/>;
       }
-      else if (game.userGameStatus.state == gameStates.Finished) {
+      else if ( game.userGameStatus.state == gameStates.Finished && !game.UIdisplayBlocks.spots ) {
         return <GameFinishedBlock game={game} />;
       }
       return null;
